@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ lang: 'en' }" :lang="lang">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.5, minimum-scale=0.5, user-scalable=no">
+    <title x-text="lang === 'en' ? 'Breaking Analysis: Intel\'s Future' : '深度分析：英特尔的未来'"></title>
+    <!-- CDN Links -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-wrap: break-word; background-color: #FFFFFF; }
+        .highlight-num { background-color: #FFF3E0; color: #E65100; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+        .text-readable { max-width: 150ch; }
+        .sidebar-gradient { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); }
+        .section-container { margin-bottom: 40px; padding: 20px; background: #FAFAFA; border-radius: 12px; min-height: auto; }
+        .chart-container { position: relative; height: 300px; margin: 20px 0; }
+        .flow-box { background: #F5F5F5; border: 2px solid #F97316; border-radius: 8px; padding: 16px; margin: 8px; }
+        .number-highlight { color: #06B6D4; font-weight: 600; } /* Light blue for numbers */
+        .text-orange-primary { color: #F97316; }
+        .border-orange-primary { border-color: #F97316; }
+        .bg-orange-light { background-color: #FFF3E0; }
+        .text-gray-dark { color: #475569; }
+        
+        /* Chart Colors */
+        .chart-color-1 { background-color: #06B6D4; } /* Cyan */
+        .chart-color-2 { background-color: #A1A1AA; } /* Zinc */
+        .chart-color-3 { background-color: #71717A; } /* Zinc-500 */
+        .chart-color-4 { background-color: #22D3EE; } /* Cyan-400 */
+        .chart-color-5 { background-color: #64748B; } /* Slate-600 */
+        .chart-color-6 { background-color: #334155; } /* Slate-700 */
+        .chart-color-7 { background-color: #0891B2; } /* Cyan-700 */
+        .chart-color-8 { background-color: #0F766E; } /* Teal-700 */
+        .chart-color-9 { background-color: #14B8A6; } /* Teal-500 */
+        .chart-color-10 { background-color: #10B981; } /* Emerald-500 */
+        .chart-color-11 { background-color: #4ADE80; } /* Green-400 */
+        .chart-color-12 { background-color: #84CC16; } /* Lime-500 */
+        .chart-color-13 { background-color: #CA8A04; } /* Amber-700 */
+        .chart-color-14 { background-color: #D97706; } /* Amber-600 */
+        .chart-color-15 { background-color: #F59E0B; } /* Amber-500 */
+        .chart-color-16 { background-color: #FB923C; } /* Orange-400 */
+        .chart-color-17 { background-color: #F97316; } /* Orange-500 */
+        .chart-color-18 { background-color: #EA580C; } /* Orange-600 */
+        .chart-color-19 { background-color: #C2410C; } /* Orange-700 */
+        .chart-color-20 { background-color: #9A3412; } /* Orange-800 */
+        .chart-color-21 { background-color: #7C2D12; } /* Orange-900 */
+        .chart-color-22 { background-color: #431407; } /* Orange-950 */
+
+        /* Custom scrollbar for sidebar */
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="fixed top-0 left-0 h-full w-64 sidebar-gradient text-white p-6 flex flex-col shadow-lg z-50 sidebar-scroll">
+        <div class="flex-grow">
+            <h2 class="text-2xl font-bold mb-6 text-orange-light" x-text="lang === 'en' ? 'Table of Contents' : '目录'"></h2>
+            <nav>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="#intel-new-direction" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '1. Intel\'s New Direction' : '1. 英特尔的新方向'"></a></li>
+                    <li><a href="#rise-fall-x86" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '2. The Rise and Fall of X86' : '2. X86的兴衰'"></a></li>
+                    <li><a href="#apple-arm-tsm" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '3. Apple/ARM/TSM Ecosystem Emerges' : '3. 苹果/ARM/台积电生态系统崛起'"></a></li>
+                    <li><a href="#floyer-warning" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '4. Floyer\'s Early Warning' : '4. Floyer的早期警告'"></a></li>
+                    <li><a href="#covid-ibm-parallels" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '5. COVID Rebound & IBM Parallels' : '5. 新冠疫情反弹与IBM的相似之处'"></a></li>
+                    <li><a href="#extreme-parallel-processing" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '6. Extreme Parallel Processing Era' : '6. 极致并行处理时代'"></a></li>
+                    <li><a href="#intel-foundry-problem" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '7. Intel\'s Foundry Business' : '7. 英特尔代工业务'"></a></li>
+                    <li><a href="#intel-amd-dynamic" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '8. Intel & AMD Dynamic' : '8. 英特尔与AMD的动态'"></a></li>
+                    <li><a href="#intel-future-path" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '9. Intel\'s Future Path' : '9. 英特尔的未来之路'"></a></li>
+                    <li><a href="#data-center-future" class="block py-1 px-2 rounded hover:bg-white hover:bg-opacity-20 transition-all" x-text="lang === 'en' ? '10. Data Center Markets of the Future' : '10. 未来数据中心市场'"></a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="mt-auto">
+            <button @click="lang = (lang === 'en' ? 'zh' : 'en')" class="w-full py-2 px-4 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all font-semibold">
+                <span x-show="lang === 'en'">Switch to Chinese</span>
+                <span x-show="lang === 'zh'">切换到英文</span>
+            </button>
+            <p class="text-xs text-white text-opacity-70 mt-4">Generated by Jason's AI Research Virtual Intelligent System (J.A.R.V.I.S)</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow ml-64 p-8 bg-white text-gray-800">
+        <h1 class="text-4xl font-extrabold mb-8 text-orange-primary" x-show="lang === 'en'">Breaking Analysis: Intel's Future Strategies</h1>
+        <h1 class="text-4xl font-extrabold mb-8 text-orange-primary" x-show="lang === 'zh'">深度分析：英特尔的未来战略</h1>
+
+        <!-- Section 1: Intel's New Direction -->
+        <section id="intel-new-direction" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">1. Intel's New Direction</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">1. 英特尔的新方向</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="flex flex-col gap-4">
+                    <div class="flow-box">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">CEO's Promises</h3>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">CEO的承诺</h3>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                            <li x-show="lang === 'en'">Clean up the balance sheet</li>
+                            <li x-show="lang === 'zh'">清理资产负债表</li>
+                            <li x-show="lang === 'en'">Slim down the company</li>
+                            <li x-show="lang === 'zh'">精简公司</li>
+                            <li x-show="lang === 'en'">Return to an engineering-focused culture</li>
+                            <li x-show="lang === 'zh'">回归以工程为核心的企业文化</li>
+                            <li x-show="lang === 'en'">Sharpen customer focus</li>
+                            <li x-show="lang === 'zh'">提升客户关注度</li>
+                            <li x-show="lang === 'en'">Shore up product line</li>
+                            <li x-show="lang === 'zh'">巩固产品线</li>
+                            <li x-show="lang === 'en'">Become a world-class independent foundry</li>
+                            <li x-show="lang === 'zh'">成为世界级的独立代工厂</li>
+                            <li x-show="lang === 'en'">Lead Intel for as long as it takes to achieve success</li>
+                            <li x-show="lang === 'zh'">长期领导英特尔直至成功</li>
+                        </ul>
+                    </div>
+                    <div class="flow-box">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Our Past Predictions</h3>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">我们过去的预测</h3>
+                        <p class="text-sm text-gray-700" x-show="lang === 'en'">
+                            Aggressively emphasized the <span class="highlight-num">icebergs ahead for Intel since <span class="number-highlight">2013</span></span>, culminating in a prediction that Intel would go bankrupt trying to execute its most previous strategy.
+                        </p>
+                        <p class="text-sm text-gray-700" x-show="lang === 'zh'">
+                            自<span class="highlight-num">2013年</span>以来，我们一直强调英特尔面临的<span class="highlight-num">冰山</span>，最终预测英特尔在执行其上一战略时将破产。
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <div class="flow-box">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">LBT's Viable Go-Forward Plan</h3>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">LBT可行的前进计划</h3>
+                        <p class="text-sm text-gray-700" x-show="lang === 'en'">
+                            While we would've preferred a different approach to Intel's foundry (e.g., a joint venture with TSM), Lip Boutin at least has what we consider to be a viable go-forward plan.
+                            However, the steady-state outcome of this new direction is far from certain.
+                        </p>
+                        <p class="text-sm text-gray-700" x-show="lang === 'zh'">
+                            虽然我们更倾向于英特尔代工厂采取不同的方法（例如，与台积电合资），但Lip Boutin至少拥有我们认为可行的前进计划。
+                            然而，这一新方向的稳定状态结果远未确定。
+                        </p>
+                    </div>
+                    <div class="flow-box">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Four Key Strategies for Intel</h3>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英特尔的四大关键战略</h3>
+                        <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                            <li x-show="lang === 'en'">Refocus products on its core PC device heritage to win back that market.</li>
+                            <li x-show="lang === 'zh'">将产品重新聚焦于其核心PC设备传统，以赢回市场。</li>
+                            <li x-show="lang === 'en'">Innovate on the product portfolio side in AI, PCs, edge, and robotics by drafting off NVIDIA's AI successes, filling holes in NVIDIA's product capabilities.</li>
+                            <li x-show="lang === 'zh'">在AI、PC、边缘和机器人领域进行产品组合创新，借鉴英伟达的AI成功经验，填补英伟达产品能力的空白。</li>
+                            <li x-show="lang === 'en'">Intelligently partner with TSM, ARM, and RISC-V for Intel's own designs.</li>
+                            <li x-show="lang === 'zh'">为英特尔自身设计与台积电、ARM和RISC-V进行智能合作。</li>
+                            <li x-show="lang === 'en'">Keep its foot in the foundry door as a precious resource for the US onshore advanced manufacturing imperative.</li>
+                            <li x-show="lang === 'zh'">将代工厂作为美国本土先进制造业的宝贵资源。</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: The Rise and Fall of X86 -->
+        <section id="rise-fall-x86" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">2. The Rise and Fall of X86</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">2. X86的兴衰</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">X86's Remarkable Run (1985-Present)</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">X86的卓越历程（1985年至今）</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        X86 grew from a tiny slice of the market in the <span class="highlight-num">1980s</span> to dominate not only PC but also data center markets. Its volume advantage in PCs allowed it to completely dominate minicomputer and RISC-based Unix systems with superior economics and better price performance, and ecosystem leverage.
+                        Ironically, X86 markets started to get a little sloppy early last decade, but then it bounced back during COVID.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        X86从<span class="highlight-num">20世纪80年代</span>市场的一小部分，发展到主导PC和数据中心市场。其在PC领域的销量优势使其能够凭借卓越的经济性、更好的性价比和生态系统优势，完全主导了当时的迷你计算机和基于RISC的Unix系统。
+                        讽刺的是，X86市场在上个十年初期开始出现一些混乱，但在新冠疫情期间又反弹了。
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="x86MarketShareChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Intel's Dominance: Volume, Value, Velocity</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英特尔的主导地位：销量、价值、速度</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        Intel's PC chip revenue and volume exploded over <span class="number-highlight">15</span> years thanks to the Wintel monopoly. Intel became the largest semiconductor manufacturer in the world, surpassing all pure-play silicon companies and IBM.
+                        As Intel took over the PC space, other enterprises went upmarket. PC volumes conferred value to X86, allowing Intel to wipe out HP, IBM, Sun, and others in the enterprise, holding <span class="highlight-num">nearly all of the data center market (well over <span class="number-highlight">90%</span>) by the <span class="number-highlight">2000s</span></span>.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        得益于Wintel垄断，英特尔的PC芯片收入和销量在<span class="number-highlight">15年</span>内爆炸式增长。英特尔成为全球最大的半导体制造商，超越了所有纯芯片公司和IBM。
+                        随着英特尔占据PC市场，其他企业转向高端市场。PC销量为X86带来了价值，使英特尔在企业市场中淘汰了惠普、IBM、Sun等公司，到<span class="number-highlight">2000年代</span>，几乎占据了<span class="highlight-num">所有数据中心市场（远超<span class="number-highlight">90%</span>）</span>。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'Volume, Value, Velocity Concept' : '销量、价值、速度概念'"></h4>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-chart-bar text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Volume' : '销量'"></span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-dollar-sign text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Value' : '价值'"></span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-tachometer-alt text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Velocity' : '速度'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'en'">
+                            Intel created volume, driving down costs. Microsoft created value. Together, they removed impediments to adoption, increasing velocity.
+                        </p>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'zh'">
+                            英特尔创造了销量，从而降低了成本。微软创造了价值。两者共同消除了采用障碍，提高了速度。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: The Apple/ARM/TSM Ecosystem Emerges -->
+        <section id="apple-arm-tsm" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">3. The Apple/ARM/TSM Ecosystem Emerges</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">3. 苹果/ARM/台积电生态系统崛起</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">The Shift in Consumer Electronics</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">消费电子领域的转变</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        Little toys from Apple, like the iPod, started to capture the imagination of consumers. The Apple ARM TSM ecosystem began to form with:
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        苹果的小玩意，如iPod，开始吸引消费者的想象力。苹果ARM台积电生态系统开始形成，其特点是：
+                    </p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'en'">
+                        <li>Better economics</li>
+                        <li>Lower power, much more efficient designs</li>
+                        <li>Longer battery lives</li>
+                        <li>Faster time to tape out</li>
+                    </ul>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'zh'">
+                        <li>更好的经济性</li>
+                        <li>更低的功耗，更高效的设计</li>
+                        <li>更长的电池续航时间</li>
+                        <li>更快的流片时间</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Intel's Missed Foundry Opportunity</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英特尔错失的代工机会</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        Intel passed on the original iPhone design. What's not as widely known is that Intel was also asked by Apple to bid on making the chips for the iPhone, being the foundry for the iPhone.
+                        Initially, iPhone chip manufacturing was done by Samsung, but they chose to compete with the iPhone. Apple then looked at Intel's capabilities and concluded that Morris Chang's TSMC was the better choice because "Intel is not a foundry."
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        英特尔错过了最初的iPhone设计。鲜为人知的是，苹果也曾邀请英特尔竞标iPhone芯片的制造，成为iPhone的代工厂。
+                        最初，iPhone芯片的制造由三星完成，但三星选择与iPhone竞争。苹果随后评估了英特尔的能力，并得出结论，张忠谋的台积电是更好的选择，因为“英特尔不是代工厂”。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'Apple\'s Decision Factors' : '苹果的决策因素'"></h4>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-microchip text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Intel\'s Capabilities' : '英特尔的能力'"></span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-industry text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'TSMC\'s Specialization' : '台积电的专业化'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'en'">
+                            Apple concluded TSMC was the better choice, quoting Morris Chang: "Intel is not a foundry."
+                        </p>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'zh'">
+                            苹果得出结论，台积电是更好的选择，引用张忠谋的话：“英特尔不是代工厂。”
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Floyer's Early Warning (2013) -->
+        <section id="floyer-warning" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">4. Floyer's Early Warning (2013)</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">4. Floyer的早期警告（2013年）</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">ARM's Momentum and Economic Advantage</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">ARM的势头和经济优势</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        In <span class="highlight-num"><span class="number-highlight">2013</span></span>, David Floyer pinpointed the momentum that ARM had and its economic advantage. He forecast the steep decline of X86 unit volumes and the rapid ascendancy of ARM-based designs.
+                        These were easy figures to ignore because they were unit volumes, not revenue or profit. However, unit volume would potentially confer advantages to the newcomers.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        在<span class="highlight-num">2013年</span>，David Floyer精确指出了ARM的势头及其经济优势。他预测X86单位销量将急剧下降，而基于ARM的设计将迅速崛起。
+                        这些数字很容易被忽视，因为它们是单位销量，而非收入或利润。然而，单位销量可能为新进入者带来优势。
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="x86ArmVolumeForecastChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Intel's "Monumental Non-Decision"</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英特尔的“重大不决策”</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        The scenario assumed Intel does nothing. Astoundingly, Intel essentially did nothing about this threat. It really lost its paranoia to quote Andy Grove: "Only the paranoid survive." It was a monumental non-decision.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        该情景假设英特尔不采取任何行动。令人震惊的是，英特尔对这一威胁基本上无动于衷。它确实失去了安迪·格鲁夫所说的“只有偏执狂才能生存”的偏执。这是一个重大的不决策。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'Intel\'s Response to Threat' : '英特尔对威胁的反应'"></h4>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-exclamation-triangle text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Threat Identified' : '威胁识别'"></span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-ban text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'No Action Taken' : '未采取行动'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'en'">
+                            Despite clear warnings, Intel failed to act, leading to a "monumental non-decision."
+                        </p>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'zh'">
+                            尽管有明确警告，英特尔未能采取行动，导致了“重大的不决策”。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: COVID Rebound and IBM Parallels -->
+        <section id="covid-ibm-parallels" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">5. COVID Rebound and IBM Parallels</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">5. 新冠疫情反弹与IBM的相似之处</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">X86 Peak During COVID: A False Front</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">新冠疫情期间X86的峰值：虚假繁荣</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        During COVID, a massive rebound in PC volumes due to work-from-home led many to claim X86 was alive and well. However, this was a false front as X86 revenue peaked in <span class="highlight-num"><span class="number-highlight">2020</span></span>. Intel's data center revenues also peaked.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        在新冠疫情期间，由于居家办公，PC销量大幅反弹，许多人声称X86依然活跃。然而，这只是一个虚假繁荣，因为X86的收入在<span class="highlight-num">2020年</span>达到顶峰。英特尔的数据中心收入也达到了顶峰。
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="x86RevenuePeakChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Echoes of IBM's "Dead Cat Bounce"</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">IBM“死猫跳”的 echoes</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        This is reminiscent of IBM in <span class="highlight-num"><span class="number-highlight">1990</span></span>, when it recorded record revenue and <span class="highlight-num"><span class="number-highlight">62%</span></span> profit growth relative to <span class="highlight-num"><span class="number-highlight">1989</span></span>. This "dead cat bounce" preceded a painful period for IBM from <span class="highlight-num"><span class="number-highlight">1991-1993</span></span>, with dramatic losses and internal chaos.
+                        IBM, once the world's premier semiconductor manufacturer, was forced to pay GlobalFoundries <span class="highlight-num">$<span class="number-highlight">1.5</span> billion</span> to take IBM Microelectronics off its hands. The catalyst was the shift to microprocessor-based systems.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        这让人想起<span class="highlight-num">1990年</span>的IBM，当时它创下了创纪录的收入，利润相对于<span class="highlight-num">1989年</span>增长了<span class="highlight-num">62%</span>。这种“死猫跳”预示着IBM在<span class="highlight-num">1991-1993年</span>期间的痛苦时期，伴随着巨大的亏损和内部混乱。
+                        IBM曾是世界顶级的半导体制造商，却被迫支付GlobalFoundries <span class="highlight-num">15亿美元</span>，以摆脱其微电子业务。其催化剂是向基于微处理器的系统转变。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'IBM\'s Microelectronics Debacle' : 'IBM微电子的灾难'"></h4>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-chart-line text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Revenue Peak (1990)' : '收入峰值（1990）'"></span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-hand-holding-usd text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'Forced Divestment' : '被迫剥离'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'en'">
+                            IBM paid GlobalFoundries $<span class="number-highlight">1.5B</span> to take its microelectronics arm, mirroring Intel's current challenges.
+                        </p>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'zh'">
+                            IBM支付GlobalFoundries <span class="number-highlight">15亿美元</span>以剥离其微电子部门，这与英特尔目前的挑战如出一辙。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: The Extreme Parallel Processing Era (NVIDIA) -->
+        <section id="extreme-parallel-processing" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">6. The Extreme Parallel Processing Era (NVIDIA)</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">6. 极致并行处理时代（英伟达）</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">NVIDIA's Dominance and Ecosystem</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英伟达的主导地位和生态系统</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        The extreme parallel processing market (accelerated computing/neural processing) is driven by NVIDIA. It's like a new "Wintel" era, with NVIDIA leveraging ARM-based designs and working closely with TSMC.
+                        NVIDIA is a true system designer, building racks and full end-to-end systems with an expanding software stack (CUDA, libraries). It's creating a new category of cloud computing: Neo Clouds.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        极致并行处理市场（加速计算/神经网络处理）由英伟达驱动。这就像一个新的“Wintel”时代，英伟达利用基于ARM的设计并与台积电紧密合作。
+                        英伟达是一个真正的系统设计者，构建机架和完整的端到端系统，拥有不断扩展的软件堆栈（CUDA、库）。它正在创建一个新的云计算类别：Neo Clouds。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'NVIDIA\'s Pillars of Dominance' : '英伟达主导地位的支柱'"></h4>
+                        <div class="flex flex-col items-start space-y-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-microchip text-orange-primary text-xl mr-2"></i>
+                                <span class="text-gray-700" x-text="lang === 'en' ? 'ARM-based Designs & TSMC Partnership' : '基于ARM的设计与台积电合作'"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-server text-orange-primary text-xl mr-2"></i>
+                                <span class="text-gray-700" x-text="lang === 'en' ? 'System Designer (Racks, End-to-End Systems)' : '系统设计者（机架、端到端系统）'"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-code text-orange-primary text-xl mr-2"></i>
+                                <span class="text-gray-700" x-text="lang === 'en' ? 'Expanding Software Stack (CUDA, Libraries)' : '不断扩展的软件堆栈（CUDA、库）'"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-cloud text-orange-primary text-xl mr-2"></i>
+                                <span class="text-gray-700" x-text="lang === 'en' ? 'New Cloud Category (Neo Clouds)' : '新型云类别（Neo Clouds）'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">NVIDIA Setting Industry Standards</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英伟达设定行业标准</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        NVIDIA is setting standards in the data center for networking, NDB, and software (CUDA). Every developer wants to use CUDA for faster and more efficient GPU results.
+                        Elon Musk's endorsement: "essentially we will take them from NVIDIA, they're by far away the best."
+                        This means anyone working in this area must abide by NVIDIA's standards. Intel must add value to this huge market.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        英伟达正在数据中心设定网络、NDB和软件（CUDA）标准。每个开发者都希望使用CUDA以获得更快、更高效的GPU结果。
+                        埃隆·马斯克的认可：“我们基本上会从英伟达那里获取，他们是迄今为止最好的。”
+                        这意味着任何在该领域工作的人都必须遵守英伟达的标准。英特尔必须为这个巨大的市场增加价值。
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="nvidiaStandardSettingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: Intel's Foundry Business: The Fundamental Problem -->
+        <section id="intel-foundry-problem" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">7. Intel's Foundry Business: The Fundamental Problem</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">7. 英特尔代工业务：根本问题</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">TSMC vs. Intel Foundry Key Metrics</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">台积电与英特尔代工关键指标对比</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        The fundamental problem: Intel would virtually never be able to catch TSMC without unlimited capital and time.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        根本问题：英特尔在没有无限资金和时间的情况下，几乎永远无法赶上台积电。
+                    </p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left" x-text="lang === 'en' ? 'Metric' : '指标'"></th>
+                                    <th class="py-3 px-6 text-left" x-text="lang === 'en' ? 'TSMC' : '台积电'"></th>
+                                    <th class="py-3 px-6 text-left" x-text="lang === 'en' ? 'Intel Foundry' : '英特尔代工'"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700 text-sm">
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-6 text-left" x-text="lang === 'en' ? 'Plant, Property & Equipment (PPE)' : '厂房、财产和设备（PPE）'"></td>
+                                    <td class="py-3 px-6 text-left"><span class="number-highlight">$105B</span></td>
+                                    <td class="py-3 px-6 text-left"><span class="number-highlight">$100B</span> (estimated <span class="number-highlight">90%</span> of overall)</td>
+                                </tr>
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-6 text-left" x-text="lang === 'en' ? 'Revenue' : '收入'"></td>
+                                    <td class="py-3 px-6 text-left"><span class="number-highlight">$88B</span></td>
+                                    <td class="py-3 px-6 text-left"><span class="number-highlight">$17.5B</span> (vast majority captive)</td>
+                                </tr>
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-6 text-left" x-text="lang === 'en' ? 'Gross Margin' : '毛利率'"></td>
+                                    <td class="py-3 px-6 text-left"><span class="number-highlight">50%</span></td>
+                                    <td class="py-3 px-6 text-left"><span class="number-highlight">36%</span> (overall company)</td>
+                                </tr>
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-6 text-left font-bold" x-text="lang === 'en' ? 'Revenue to PPE Ratio' : '收入与PPE比率'"></td>
+                                    <td class="py-3 px-6 text-left font-bold text-orange-primary"><span class="number-highlight">83%</span></td>
+                                    <td class="py-3 px-6 text-left font-bold text-orange-primary"><span class="number-highlight">17.5%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-4" x-show="lang === 'en'">
+                        Intel lost nearly <span class="highlight-num">$<span class="number-highlight">20</span> billion</span> in <span class="highlight-num"><span class="number-highlight">2024</span></span> on a GAAP basis due to foundry and write-offs. The effective utilization of Intel's PPE, if applying TSMC best practices, is <span class="highlight-num">$<span class="number-highlight">21</span> billion</span>. This means <span class="highlight-num">$<span class="number-highlight">80</span> billion</span> is underutilized and ripe for being written off.
+                    </p>
+                    <p class="text-sm text-gray-700 mt-4" x-show="lang === 'zh'">
+                        英特尔在<span class="highlight-num">2024年</span>因代工和冲销而损失了近<span class="highlight-num">200亿美元</span>（按GAAP计算）。如果采用台积电的最佳实践，英特尔PPE的有效利用率为<span class="highlight-num">210亿美元</span>。这意味着<span class="highlight-num">800亿美元</span>的资产未被充分利用，并可能被冲销。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Diane Bryant's Perspective</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">Diane Bryant的观点</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        Diane Bryant, former head of Intel's data center business, expressed optimism in LBT's leadership despite Intel trying and failing <span class="highlight-num">five times</span> to build a foundry. She noted that not all chips need leading edge nodes.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        英特尔数据中心业务前负责人Diane Bryant对LBT的领导力表示乐观，尽管英特尔曾<span class="highlight-num">五次</span>尝试建立代工厂并失败。她指出，并非所有芯片都需要尖端节点。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'Foundry Challenges & Optimism' : '代工挑战与乐观'"></h4>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-times-circle text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? '5 Past Failures' : '5次失败'"></span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-chart-line text-orange-primary text-3xl mb-2"></i>
+                                <span class="text-gray-700 font-semibold" x-text="lang === 'en' ? 'LBT\'s Leadership' : 'LBT的领导'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'en'">
+                            Cautious optimism for Intel's foundry future, but a very long journey to profitability (<span class="number-highlight">50/50</span> at best).
+                        </p>
+                        <p class="text-xs text-gray-600 mt-2 text-center" x-show="lang === 'zh'">
+                            对英特尔代工业务的未来持谨慎乐观态度，但实现盈利的道路漫长（充其量只有<span class="number-highlight">50/50</span>的机会）。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: Intel & AMD Dynamic -->
+        <section id="intel-amd-dynamic" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">8. Intel & AMD Dynamic</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">8. 英特尔与AMD的动态</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">AMD's Position and Competition</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">AMD的地位与竞争</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        AMD is also exposed to these market shifts, with a high reliance on the X86 market, which is in steady decline.
+                        AMD is outgunning Intel with better product in its core businesses. Intel has even been forced to partner with AMD to try and keep X86 alive.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        AMD也面临这些市场转变，高度依赖X86市场，而该市场正在稳步下滑。
+                        AMD在核心业务中以更好的产品超越英特尔。英特尔甚至被迫与AMD合作，试图维持X86的生命力。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">The Intel-AMD Dynamic</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英特尔-AMD动态</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        The most logical thing for them to do is combine, but this is unlikely due to the foundry business.
+                        AMD has taken equal market share of the server marketplace and offers the best gaming machines. They have driven their partnership with TSMC very hard.
+                        If Intel is not careful, this difference will grow over time, putting Intel in a very dangerous position.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        对他们来说，最合乎逻辑的做法是合并，但由于代工业务的存在，这不太可能发生。
+                        AMD在服务器市场占据了同等份额，并提供最好的游戏机。他们与台积电的合作非常紧密。
+                        如果英特尔不小心，这种差距将随着时间而扩大，使英特尔处于非常危险的境地。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'AMD\'s Advantages' : 'AMD的优势'"></h4>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'en'">
+                            <li>Equal server market share</li>
+                            <li>Best gaming machines</li>
+                            <li>Strong TSMC partnership</li>
+                        </ul>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'zh'">
+                            <li>同等服务器市场份额</li>
+                            <li>最佳游戏机</li>
+                            <li>强大的台积电合作关系</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 9: Intel's Future Path: Where to Go From Here -->
+        <section id="intel-future-path" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">9. Intel's Future Path: Where to Go From Here</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">9. 英特尔的未来之路：何去何从</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Foundry Viability & Advanced Designs</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">代工可行性与先进设计</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        To keep foundry viable, Intel needs wafer scale volume. This means leaning into ARM and RISC-V for both its own internal designs and to attract external customers.
+                        For its advanced designs, Intel must go to TSMC to shore up its PC and server business, compete with AMD, get its volume up, and get to market faster.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        为了保持代工厂的生存能力，英特尔需要晶圆规模的产量。这意味着要依靠ARM和RISC-V，既用于其内部设计，也用于吸引外部客户。
+                        对于其先进设计，英特尔必须转向台积电，以巩固其PC和服务器业务，与AMD竞争，提高产量，并更快地进入市场。
+                    </p>
+                    <div class="flow-box flex flex-col items-center">
+                        <h4 class="text-lg font-medium text-gray-dark mb-2" x-text="lang === 'en' ? 'Foundry Strategy' : '代工战略'"></h4>
+                        <div class="flex flex-col items-start space-y-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-microchip text-orange-primary text-xl mr-2"></i>
+                                <span class="text-gray-700" x-text="lang === 'en' ? 'Lean into ARM & RISC-V (Internal & External)' : '倾向ARM和RISC-V（内部和外部）'"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-industry text-orange-primary text-xl mr-2"></i>
+                                <span class="text-gray-700" x-text="lang === 'en' ? 'Partner with TSMC for Advanced Designs' : '与台积电合作进行先进设计'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Emerging Markets: Mobile Edge & Robotics</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">新兴市场：移动边缘与机器人</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        This emerging market is predicted to be much larger than X86 ever was. NVIDIA has created two distinct marketplaces:
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        这个新兴市场预计将比X86以往任何时候都大。英伟达创造了两个截然不同的市场：
+                    </p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'en'">
+                        <li>AI Cloud Marketplace (NVIDIA dominates with <span class="highlight-num"><span class="number-highlight">75-80%</span></span> market share).</li>
+                        <li>Smaller, distributed systems (workstations, PCs, robotics, edge) - this market will grow very fast and be several times the size of today's PC X86 market.</li>
+                    </ul>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'zh'">
+                        <li>AI云市场（英伟达以<span class="highlight-num">75-80%</span>的市场份额占据主导地位）。</li>
+                        <li>更小型的分布式系统（工作站、PC、机器人、边缘）——这个市场将增长非常快，是当今PC X86市场的数倍。</li>
+                    </ul>
+                    <p class="text-sm text-gray-700 mt-4" x-show="lang === 'en'">
+                        NVIDIA's technology for data centers is not efficient for smaller systems. Intel's opportunity lies in using its expertise in small systems and developing expertise in mobile and edge.
+                        Intel should build on NVIDIA standards and differentiate, not just become the AMD of NVIDIA.
+                    </p>
+                    <p class="text-sm text-gray-700 mt-4" x-show="lang === 'zh'">
+                        英伟达的数据中心技术对于小型系统来说效率不高。英特尔的机会在于利用其在小型系统方面的专业知识，并发展在移动和边缘领域的专业知识。
+                        英特尔应在英伟达标准的基础上进行构建和差异化，而不仅仅成为英伟达的AMD。
+                    </p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Intel's Internal Focus & Government Market</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">英特尔的内部重点与政府市场</h3>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'en'">
+                        <li>Cut headcount and get focused.</li>
+                        <li>Improve utilization of PPE.</li>
+                        <li>Gear up for emerging markets.</li>
+                        <li>Keep close to the US government, especially for military and security systems (high requirements).</li>
+                    </ul>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'zh'">
+                        <li>裁员并集中精力。</li>
+                        <li>提高PPE的利用率。</li>
+                        <li>为新兴市场做好准备。</li>
+                        <li>与美国政府保持紧密联系，特别是军事和安全系统（高要求）。</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="chart-container">
+                        <canvas id="intelMarketOpportunityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 10: Data Center Markets of the Future (ETR DNA) -->
+        <section id="data-center-future" class="section-container shadow-md">
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'en'">10. Data Center Markets of the Future (ETR DNA)</h2>
+            <h2 class="text-3xl font-bold mb-4 text-orange-primary" x-show="lang === 'zh'">10. 未来数据中心市场（ETR DNA）</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">Market Landscape (Pre-ChatGPT vs. Post-ChatGPT)</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">市场格局（ChatGPT之前与之后）</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        This chart shows the market landscape with Net Score (vertical axis) and Market Share (horizontal axis).
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        此图表显示了市场格局，其中净得分（垂直轴）和市场份额（水平轴）。
+                    </p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'en'">
+                        <li><strong>NVIDIA:</strong> From major player to THE player (up and to the right).</li>
+                        <li><strong>Intel:</strong> Swapped places essentially with AMD.</li>
+                        <li><strong>ARM:</strong> Ascending to the right (seeping into enterprise).</li>
+                        <li><strong>Google Cloud Platform:</strong> Improved position (TPUs, AI, Gemini, Vertex).</li>
+                        <li><strong>Chip Startups:</strong> Many emerging, will see how many survive.</li>
+                    </ul>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'zh'">
+                        <li><strong>英伟达：</strong>从主要参与者变为核心参与者（向上向右）。</li>
+                        <li><strong>英特尔：</strong>与AMD互换位置。</li>
+                        <li><strong>ARM：</strong>向右上升（渗透到企业）。</li>
+                        <li><strong>Google Cloud Platform：</strong>地位提升（TPU、AI、Gemini、Vertex）。</li>
+                        <li><strong>芯片初创公司：</strong>许多新兴公司，拭目以待有多少能存活下来。</li>
+                    </ul>
+                    <div class="chart-container">
+                        <canvas id="dataCenterMarketChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'en'">China/Taiwan/TSM Scenario & US Imperative</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-dark" x-show="lang === 'zh'">中国/台湾/台积电情景与美国当务之急</h3>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'en'">
+                        If China takes over Taiwan (and TSMC) before Intel's foundry achieves its objectives (likely <span class="highlight-num"><span class="number-highlight">8-10</span> years</span>), it poses significant risks to the US.
+                    </p>
+                    <p class="text-sm text-gray-700 mb-4" x-show="lang === 'zh'">
+                        如果中国在英特尔代工厂实现其目标之前（可能需要<span class="highlight-num">8-10年</span>）控制台湾（和台积电），将对美国构成重大风险。
+                    </p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'en'">
+                        <li><strong>Is advanced US manufacturing on shore vital?</strong> Yes.</li>
+                        <li><strong>Is a US domiciled company capable of developing advanced chips vital?</strong> Yes.</li>
+                        <li><strong>Missed Opportunity:</strong> US government and Intel chose not to pursue a bold plan (e.g., joint venture with TSMC, hyperscaler funding).</li>
+                        <li><strong>Conundrum:</strong> TSMC may never have bleeding edge on shore. If China gains control, it puts the US military in a precarious position.</li>
+                    </ul>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1" x-show="lang === 'zh'">
+                        <li><strong>美国本土先进制造业是否至关重要？</strong> 是的。</li>
+                        <li><strong>一家能够开发先进芯片的美国本土公司是否至关重要？</strong> 是的。</li>
+                        <li><strong>错失的机会：</strong>美国政府和英特尔选择不推行大胆计划（例如，与台积电合资，超大规模厂商资助）。</li>
+                        <li><strong>困境：</strong>台积电可能永远不会在本土拥有尖端技术。如果中国获得控制权，将使美国军方处于危险境地。</li>
+                    </ul>
+                    <p class="text-sm text-gray-700 mt-4" x-show="lang === 'en'">
+                        <strong>Final Thoughts:</strong> Intel may face the same fate as IBM, eventually forced to spin out its foundry.
+                    </p>
+                    <p class="text-sm text-gray-700 mt-4" x-show="lang === 'zh'">
+                        <strong>最终思考：</strong>英特尔可能面临与IBM相同的命运，最终被迫剥离其代工业务。
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('app', () => ({
+                lang: 'en',
+                init() {
+                    this.renderCharts();
+                    // Re-render charts on language change to update labels/tooltips
+                    this.$watch('lang', () => {
+                        this.destroyCharts(); // Destroy existing charts
+                        this.renderCharts(); // Re-render with new language
+                    });
+                },
+                charts: [], // To store chart instances for destruction
+
+                destroyCharts() {
+                    this.charts.forEach(chart => chart.destroy());
+                    this.charts = [];
+                },
+
+                renderCharts() {
+                    // Chart 1: X86 Market Share (The Rise and Fall of X86)
+                    const x86MarketShareCtx = document.getElementById('x86MarketShareChart').getContext('2d');
+                    this.charts.push(new Chart(x86MarketShareCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['1985', '1990', '1995', '2000', '2005', '2010', '2015', '2020', '2023'],
+                            datasets: [{
+                                label: this.lang === 'en' ? 'X86 Market Share (%)' : 'X86市场份额 (%)',
+                                data: [5, 20, 50, 90, 95, 90, 80, 85, 70], // Illustrative data
+                                borderColor: '#F97316', // Orange
+                                backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: {
+                                        color: '#475569' // Dark gray
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': ' + context.parsed.y + '%';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Year' : '年份',
+                                        color: '#475569'
+                                    },
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Market Share (%)' : '市场份额 (%)',
+                                        color: '#475569'
+                                    },
+                                    min: 0,
+                                    max: 100,
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    }));
+
+                    // Chart 2: X86 vs ARM Unit Volume Forecast (Floyer's Early Warning)
+                    const x86ArmVolumeForecastCtx = document.getElementById('x86ArmVolumeForecastChart').getContext('2d');
+                    this.charts.push(new Chart(x86ArmVolumeForecastCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['2010', '2013', '2015', '2018', '2020', '2023', '2025 (Forecast)'],
+                            datasets: [
+                                {
+                                    label: this.lang === 'en' ? 'X86 Unit Volume (Billions)' : 'X86单位销量（十亿）',
+                                    data: [0.3, 0.4, 0.35, 0.3, 0.45, 0.38, 0.25], // Illustrative data
+                                    borderColor: '#A1A1AA', // Cement Gray
+                                    backgroundColor: 'rgba(161, 161, 170, 0.2)',
+                                    fill: false,
+                                    tension: 0.3
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'ARM Unit Volume (Billions)' : 'ARM单位销量（十亿）',
+                                    data: [0.1, 0.5, 0.8, 1.2, 1.5, 2.0, 2.5], // Illustrative data
+                                    borderColor: '#06B6D4', // Cyan
+                                    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                                    fill: false,
+                                    tension: 0.3
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: {
+                                        color: '#475569'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': ' + context.parsed.y + 'B';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Year' : '年份',
+                                        color: '#475569'
+                                    },
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Unit Volume (Billions)' : '单位销量（十亿）',
+                                        color: '#475569'
+                                    },
+                                    min: 0,
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    }));
+
+                    // Chart 3: X86 Revenue Peak (COVID Rebound and IBM Parallels)
+                    const x86RevenuePeakCtx = document.getElementById('x86RevenuePeakChart').getContext('2d');
+                    this.charts.push(new Chart(x86RevenuePeakCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['2018', '2019', '2020', '2021', '2022', '2023'],
+                            datasets: [{
+                                label: this.lang === 'en' ? 'X86 Revenue (Billions USD)' : 'X86收入（十亿美元）',
+                                data: [60, 65, 75, 70, 55, 50], // Illustrative data
+                                borderColor: '#F97316', // Orange
+                                backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: {
+                                        color: '#475569'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': $' + context.parsed.y + 'B';
+                                        }
+                                    }
+                                },
+                                // Note: Chart.js Annotation Plugin is needed for advanced annotations.
+                                // This is a basic example, for full annotation features, a plugin like chartjs-plugin-annotation is required.
+                                // For this presentation, the text explanation and simple line are sufficient.
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Year' : '年份',
+                                        color: '#475569'
+                                    },
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Revenue (Billions USD)' : '收入（十亿美元）',
+                                        color: '#475569'
+                                    },
+                                    min: 0,
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    }));
+
+                    // Chart 4: NVIDIA Setting Industry Standards (Bar Chart)
+                    const nvidiaStandardSettingCtx = document.getElementById('nvidiaStandardSettingChart').getContext('2d');
+                    this.charts.push(new Chart(nvidiaStandardSettingCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: [
+                                this.lang === 'en' ? 'Networking' : '网络',
+                                this.lang === 'en' ? 'NDB' : 'NDB',
+                                this.lang === 'en' ? 'Software (CUDA)' : '软件 (CUDA)'
+                            ],
+                            datasets: [{
+                                label: this.lang === 'en' ? 'NVIDIA Standard Setting' : '英伟达标准设定',
+                                data: [100, 100, 100], // Represents dominance
+                                backgroundColor: ['#06B6D4', '#06B6D4', '#06B6D4'], // Cyan
+                                borderColor: ['#06B6D4', '#06B6D4', '#06B6D4'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: {
+                                        color: '#475569'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': Dominant';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    display: false, // Hide Y-axis as it's about dominance, not specific values
+                                    beginAtZero: true,
+                                    max: 100,
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            }
+                        }
+                    }));
+
+                    // Chart 5: Intel Market Opportunity (Pie Chart)
+                    const intelMarketOpportunityCtx = document.getElementById('intelMarketOpportunityChart').getContext('2d');
+                    this.charts.push(new Chart(intelMarketOpportunityCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: [
+                                this.lang === 'en' ? 'AI Cloud Marketplace (NVIDIA Dominated)' : 'AI云市场（英伟达主导）',
+                                this.lang === 'en' ? 'Smaller, Distributed Systems (Intel Opportunity)' : '小型分布式系统（英特尔机会）'
+                            ],
+                            datasets: [{
+                                data: [75, 25], // Illustrative data: 75% dominated by NVIDIA, 25% Intel's opportunity
+                                backgroundColor: ['#A1A1AA', '#F97316'], // Gray for NVIDIA, Orange for Intel
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: '#475569'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed !== null) {
+                                                label += context.parsed + '%';
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }));
+
+                    // Chart 6: Data Center Market of the Future (Scatter Plot)
+                    const dataCenterMarketCtx = document.getElementById('dataCenterMarketChart').getContext('2d');
+                    this.charts.push(new Chart(dataCenterMarketCtx, {
+                        type: 'scatter',
+                        data: {
+                            datasets: [
+                                {
+                                    label: this.lang === 'en' ? 'NVIDIA' : '英伟达',
+                                    data: [{ x: 90, y: 95 }], // High market share, high net score
+                                    backgroundColor: '#F97316', // Orange
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'Intel' : '英特尔',
+                                    data: [{ x: 50, y: 40 }], // Medium market share, lower net score
+                                    backgroundColor: '#A1A1AA', // Cement Gray
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'AMD' : 'AMD',
+                                    data: [{ x: 60, y: 50 }], // Medium-high market share, medium net score
+                                    backgroundColor: '#06B6D4', // Cyan
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'ARM' : 'ARM',
+                                    data: [{ x: 70, y: 75 }], // Ascending
+                                    backgroundColor: '#EA580C', // Darker Orange
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'Google Cloud Platform' : 'Google Cloud Platform',
+                                    data: [{ x: 45, y: 80 }], // Improved AI chops
+                                    backgroundColor: '#22D3EE', // Cyan-400
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'Chip Startups' : '芯片初创公司',
+                                    data: [{ x: 20, y: 60 }], // Emerging, lower share, decent score
+                                    backgroundColor: '#64748B', // Slate-600
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                },
+                                {
+                                    label: this.lang === 'en' ? 'China (Geopolitical Risk)' : '中国（地缘政治风险）',
+                                    data: [{ x: 80, y: 20 }], // High share potential, low score due to risk
+                                    backgroundColor: '#7C2D12', // Orange-900
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: '#475569'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': (';
+                                            }
+                                            if (context.parsed.x !== null) {
+                                                label += (this.lang === 'en' ? 'Share: ' : '份额：') + context.parsed.x + '%, ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += (this.lang === 'en' ? 'Net Score: ' : '净得分：') + context.parsed.y + '%)';
+                                            }
+                                            return label;
+                                        }.bind(this) // Bind 'this' to access Alpine.js data
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'linear',
+                                    position: 'bottom',
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Market Share (%)' : '市场份额 (%)',
+                                        color: '#475569'
+                                    },
+                                    min: 0,
+                                    max: 100,
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                },
+                                y: {
+                                    type: 'linear',
+                                    position: 'left',
+                                    title: {
+                                        display: true,
+                                        text: this.lang === 'en' ? 'Net Score (%)' : '净得分 (%)',
+                                        color: '#475569'
+                                    },
+                                    min: 0,
+                                    max: 100,
+                                    ticks: {
+                                        color: '#64748B'
+                                    },
+                                    grid: {
+                                        color: 'rgba(100, 116, 139, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    }));
+                }
+            }));
+        });
+    </script>
+</body>
+</html>
