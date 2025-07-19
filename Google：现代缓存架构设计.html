@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ lang: 'en' }" :lang="lang">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.5, minimum-scale=0.5, user-scalable=no">
+    <title x-text="lang === 'en' ? 'JuiceFS Technical Evolution and Market Positioning Analysis' : 'JuiceFS技术演进与市场定位解析'"></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-wrap: break-word; }
+        .highlight-num { 
+            background-color: rgba(63, 98, 75, 0.1); /* Light tint of theme color */
+            color: #3f624b; /* Theme color */
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: 600; /* Slightly bolder for numbers */
+        }
+        .text-readable { max-width: 150ch; }
+        .sidebar-gradient { 
+            background: linear-gradient(135deg, #3f624b 0%, #2e4a36 100%); /* Darker gradient for theme color */
+        }
+        .section-container { 
+            margin-bottom: 40px; 
+            padding: 20px; 
+            background: #FAFAFA; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            min-height: auto; /* Ensure height is natural */
+        }
+        .chart-container { position: relative; height: 300px; margin: 20px 0; }
+        .transition-all { transition: all 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.02); } /* Slightly less aggressive scale */
+        
+        /* Custom styles for I/O Flowchart */
+        .flow-step {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db; /* Light gray border */
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            width: 180px; /* Fixed width for consistency */
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: #64748b; /* Cement gray for arrows */
+            margin: 0 10px;
+            align-self: center;
+        }
+        .flow-label {
+            font-size: 0.85rem;
+            color: #475569; /* Darker gray for text */
+            margin-top: 5px;
+        }
+
+        /* SmartArt-like for Core Scenarios */
+        .scenario-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .scenario-card:hover {
+            transform: translateY(-5px);
+        }
+        .scenario-icon {
+            font-size: 2.5rem;
+            color: #3f624b; /* Theme color */
+            margin-bottom: 15px;
+        }
+        .scenario-title {
+            font-weight: 600;
+            color: #334155; /* Dark gray */
+            margin-bottom: 10px;
+        }
+        .scenario-description {
+            font-size: 0.9rem;
+            color: #475569; /* Medium gray */
+        }
+
+        /* Callout styles */
+        .info-callout { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        .warning-callout { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        .success-callout { background: #ecfdf5; border-left: 4px solid #10b981; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        
+        /* Table styling */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e2e8f0; /* Tailwind slate-200 */
+            padding: 12px 15px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .data-table th {
+            background-color: #f1f5f9; /* Tailwind slate-100 */
+            font-weight: 600;
+            color: #334155; /* Tailwind slate-700 */
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f8fafc; /* Tailwind slate-50 */
+        }
+        .data-table td {
+            color: #475569; /* Tailwind slate-600 */
+        }
+        .data-table td strong {
+            color: #3f624b; /* Theme color */
+        }
+
+        /* Language specific display */
+        .lang-en { display: block; }
+        .lang-zh { display: none; }
+        [lang="zh"] .lang-en { display: none; }
+        [lang="zh"] .lang-zh { display: block; }
+
+        /* Ensure no overlapping and proper spacing between blocks */
+        .block-spacing > div {
+            margin-bottom: 30px; /* Spacing between major blocks */
+        }
+        .block-spacing > div:last-child {
+            margin-bottom: 0;
+        }
+        .grid, .flex {
+            gap: 2rem; /* Use gap for spacing between columns/rows */
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 sidebar-gradient text-white p-6 overflow-y-auto z-50">
+        <h2 class="text-2xl font-bold mb-4">
+            <span x-show="lang === 'en'">Navigation</span>
+            <span x-show="lang === 'zh'">导航目录</span>
+        </h2>
+        
+        <!-- Language Toggle -->
+        <button @click="lang = lang === 'en' ? 'zh' : 'en'" 
+                class="w-full mb-6 bg-white/20 hover:bg-white/30 p-3 rounded-lg transition-all text-left">
+            <i class="fas fa-language mr-2"></i>
+            <span x-show="lang === 'en'">Switch to 中文</span>
+            <span x-show="lang === 'zh'">切换到 English</span>
+        </button>
+
+        <!-- Navigation Menu -->
+        <nav class="space-y-2">
+            <a href="#introduction" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span x-show="lang === 'en'">Introduction & Overview</span>
+                <span x-show="lang === 'zh'">介绍与概览</span>
+            </a>
+            <a href="#tech-evolution" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-chart-line mr-2"></i>
+                <span x-show="lang === 'en'">Tech Evolution & Scenarios</span>
+                <span x-show="lang === 'zh'">技术演进与场景</span>
+            </a>
+            <a href="#architecture-analysis" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-sitemap mr-2"></i>
+                <span x-show="lang === 'en'">Architecture Analysis</span>
+                <span x-show="lang === 'zh'">架构解析</span>
+            </a>
+            <a href="#scenario-optimization" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-cogs mr-2"></i>
+                <span x-show="lang === 'en'">Scenario Optimization</span>
+                <span x-show="lang === 'zh'">场景优化</span>
+            </a>
+            <a href="#version-highlights" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-star mr-2"></i>
+                <span x-show="lang === 'en'">Version Highlights</span>
+                <span x-show="lang === 'zh'">版本亮点</span>
+            </a>
+            <a href="#future-outlook" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-crystal-ball mr-2"></i>
+                <span x-show="lang === 'en'">Future Outlook & Competition</span>
+                <span x-show="lang === 'zh'">未来轨迹与竞争</span>
+            </a>
+            <a href="#future-evolution" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-rocket mr-2"></i>
+                <span x-show="lang === 'en'">Future Evolution</span>
+                <span x-show="lang === 'zh'">未来演进推测</span>
+            </a>
+            <a href="#competitor-analysis" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-balance-scale-left mr-2"></i>
+                <span x-show="lang === 'en'">Competitor Analysis</span>
+                <span x-show="lang === 'zh'">竞争格局分析</span>
+            </a>
+            <a href="#strategic-insights" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-lightbulb mr-2"></i>
+                <span x-show="lang === 'en'">Strategic Insights</span>
+                <span x-show="lang === 'zh'">战略洞察</span>
+            </a>
+            <a href="#conclusion" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span x-show="lang === 'en'">Conclusion & Advice</span>
+                <span x-show="lang === 'zh'">结论与建议</span>
+            </a>
+            <a href="#references" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-book mr-2"></i>
+                <span x-show="lang === 'en'">References</span>
+                <span x-show="lang === 'zh'">参考资料</span>
+            </a>
+            <a href="#extended-thinking" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-question-circle mr-2"></i>
+                <span x-show="lang === 'en'">Extended Thinking</span>
+                <span x-show="lang === 'zh'">延伸思考</span>
+            </a>
+        </nav>
+        
+        <div class="mt-12 pt-6 border-t border-white/30 text-sm text-center">
+            <p class="opacity-90">Generated by trylab (spark from J.A.R.V.I.S)</p>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <!-- Main Title Section -->
+        <section id="introduction" class="section-container">
+            <h1 class="text-5xl font-extrabold text-[#3f624b] tracking-tight mb-6">
+                <span x-show="lang === 'en'">JuiceFS Technical Evolution and Market Positioning Analysis</span>
+                <span x-show="lang === 'zh'">JuiceFS技术演进与市场定位解析</span>
+            </h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Report Overview</span>
+                        <span x-show="lang === 'zh'">全文概览</span>
+                    </h2>
+                    <div class="info-callout">
+                        <p class="text-gray-700 leading-relaxed">
+                            <span x-show="lang === 'en'">This report provides an in-depth analysis of JuiceFS's technical evolution over the past three years (mid-2022 to mid-2025). It will meticulously dissect its version release roadmap, discerning its primary application scenarios and corresponding technical optimizations. Furthermore, the report will project its future technical trajectory and conduct a multi-dimensional comparison with mainstream solutions such as Hammerspace, Alluxio, Weka, and VAST Data, to reveal their respective technological path differences and potential mutual learning values.</span>
+                            <span x-show="lang === 'zh'">本报告旨在解读JuiceFS在过去三年（约2022年中至2025年中）技术演进的深度分析。报告将详细剖析其版本发布路线图，洞察其重点关注的应用场景及相应的技术优化。同时，报告将推演其未来技术路线，并将其与Hammerspace、Alluxio、Weka、VAST Data等主流解决方案进行多维度对比，以揭示各自的技术路径差异与潜在的借鉴价值。</span>
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Key Takeaways</span>
+                        <span x-show="lang === 'zh'">阅读收获</span>
+                    </h2>
+                    <div class="success-callout">
+                        <ul class="text-gray-700 space-y-2">
+                            <li><i class="fas fa-check-circle mr-2 text-green-600"></i><span x-show="lang === 'en'">Understand JuiceFS's core architecture of <strong>data and metadata separation</strong>, and its impact on performance, cost, and flexibility.</span><span x-show="lang === 'zh'">理解 JuiceFS 数据与元数据分离的核心架构，及其如何影响性能、成本和灵活性。</span></li>
+                            <li><i class="fas fa-check-circle mr-2 text-green-600"></i><span x-show="lang === 'en'">Grasp how JuiceFS has evolved into a mature enterprise-grade storage platform through optimizations for AI/ML, multi-cloud, and other scenarios over the past three years.</span><span x-show="lang === 'zh'">掌握 JuiceFS 在过去三年如何通过针对 AI/ML、多云等场景的优化，演进为一个成熟的企业级存储平台。</span></li>
+                            <li><i class="fas fa-check-circle mr-2 text-green-600"></i><span x-show="lang === 'en'">Clearly recognize JuiceFS's positioning in the modern distributed storage competitive landscape, and its core differences and applicable scenarios compared to Hammerspace, Alluxio, Weka, and VAST Data.</span><span x-show="lang === 'zh'">清晰认识 JuiceFS 在现代分布式存储竞争格局中的定位，以及其与 Hammerspace、Alluxio、Weka、VAST Data 等方案的核心差异与适用场景。</span></li>
+                            <li><i class="fas fa-check-circle mr-2 text-green-600"></i><span x-show="lang === 'en'">Gain insights into JuiceFS's potential future development directions, and its potential in intelligent data services and data orchestration.</span><span x-show="lang === 'zh'">洞察 JuiceFS 未来可能的发展方向，以及其在智能数据服务和数据编排方面的潜力。</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 1: JuiceFS Technical Evolution and Scenario-Driven Evolution -->
+        <section id="tech-evolution" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">JuiceFS Technical Roadmap and Scenario-Driven Evolution (2022-2025)</span>
+                <span x-show="lang === 'zh'">一、JuiceFS技术路线图与场景驱动的演进 (2022-2025)</span>
+            </h2>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+                <span x-show="lang === 'en'">JuiceFS's technical development path clearly demonstrates its evolution from a flexible open-source file system to a storage platform that fully supports complex enterprise-grade scenarios such as AI, big data, and multi-cloud. The uniqueness of its core architecture dictates the direction of its technical iterations and market strategy.</span>
+                <span x-show="lang === 'zh'">JuiceFS的技术发展路径清晰地展示了其从一个灵活的开源文件系统，向一个全面支持AI、大数据和多云等复杂企业级场景的存储平台演进的过程。其核心架构的独特性决定了其技术迭代的方向和市场策略。</span>
+            </p>
+
+            <!-- Subsection 1.1: Foundational Architecture: Read/Write Path Analysis -->
+            <div id="architecture-analysis" class="block-spacing">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">1.1 Foundational Architecture: Read/Write Path Analysis</span>
+                    <span x-show="lang === 'zh'">1.1 奠基架构：读写路径解析</span>
+                </h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    <span x-show="lang === 'en'">The essence of JuiceFS's architecture lies in its <strong>data and metadata separation</strong> design. File data is chunked and stored in user-selected object storage (e.g., Amazon S3, MinIO, Ceph), while file metadata (e.g., filenames, permissions, directory structure, data block mappings) is independently stored in user-selected databases (e.g., Redis, TiKV, PostgreSQL). This decoupled design is the cornerstone for understanding all of JuiceFS's performance, cost, and flexibility characteristics.</span>
+                    <span x-show="lang === 'zh'">JuiceFS的架构精髓在于其<strong>数据与元数据分离</strong>的设计。文件数据被切分后存储在用户自选的对象存储（如Amazon S3、MinIO、Ceph）中，而文件的元数据（如文件名、权限、目录结构、数据块映射等）则独立存储在用户自选的数据库（如Redis、TiKV、PostgreSQL）中。这种解耦设计是理解JuiceFS所有性能、成本和灵活性特征的基石。</span>
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Write Operation Flow -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h4 class="text-xl font-semibold text-gray-700 mb-4 text-center">
+                            <span x-show="lang === 'en'">Write Operation Flow</span>
+                            <span x-show="lang === 'zh'">写操作流程</span>
+                        </h4>
+                        <ol class="list-decimal list-inside text-gray-700 space-y-2 text-sm">
+                            <li><strong><span x-show="lang === 'en'">Request Initiation:</span><span x-show="lang === 'zh'">请求发起：</span></strong> <span x-show="lang === 'en'">Application initiates write request via JuiceFS client (e.g., FUSE mount, S3 gateway, HDFS SDK).</span><span x-show="lang === 'zh'">应用程序通过JuiceFS客户端（如FUSE挂载、S3网关、HDFS SDK）发起写请求。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Data Chunking:</span><span x-show="lang === 'zh'">数据分块：</span></strong> <span x-show="lang === 'en'">Client logically chunks file into max <span class="highlight-num">64 MiB</span> data blocks (Chunk). Continuous writes within a Chunk form a logical Slice.</span><span x-show="lang === 'zh'">客户端将待写入文件在逻辑上切分为最大<span class="highlight-num">64 MiB</span>的<strong>数据块（Chunk）</strong>。在Chunk内部，一次连续的写入操作会形成一个逻辑上的<strong>数据片（Slice）</strong>。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Data Slicing:</span><span x-show="lang === 'zh'">数据分片：</span></strong> <span x-show="lang === 'en'">For concurrent upload, logical Slices are further split into physical Blocks (default <span class="highlight-num">4 MiB</span>), which are the entities written to object storage.</span><span x-show="lang === 'zh'">为实现并发上传、提升性能，逻辑上的Slice会被进一步切分为物理上的<strong>数据分片（Block）</strong>（默认为<span class="highlight-num">4 MiB</span>），这才是最终写入对象存储的实体。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Concurrent Upload:</span><span x-show="lang === 'zh'">并发上传：</span></strong> <span x-show="lang === 'en'">Client concurrently uploads these Blocks to object storage.</span><span x-show="lang === 'zh'">客户端将这些Block并发上传至对象存储。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Metadata Submission:</span><span x-show="lang === 'zh'">元数据提交：</span></strong> <span x-show="lang === 'en'">After all data slices are uploaded, the client transactionally commits the file's complete metadata (including file attributes and Chunk/Slice/Block mappings) to the metadata engine.</span><span x-show="lang === 'zh'">数据分片全部上传成功后，客户端以事务性方式将文件的完整元数据（包括文件属性和Chunk/Slice/Block的映射关系）提交至元数据引擎。</span></li>
+                        </ol>
+                    </div>
+
+                    <!-- Read Operation Flow -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h4 class="text-xl font-semibold text-gray-700 mb-4 text-center">
+                            <span x-show="lang === 'en'">Read Operation Flow</span>
+                            <span x-show="lang === 'zh'">读操作流程</span>
+                        </h4>
+                        <ol class="list-decimal list-inside text-gray-700 space-y-2 text-sm">
+                            <li><strong><span x-show="lang === 'en'">Request & Cache Check:</span><span x-show="lang === 'zh'">请求与缓存检查：</span></strong> <span x-show="lang === 'en'">Application initiates read request. Client first checks its multi-level local cache (memory and disk).</span><span x-show="lang === 'zh'">应用程序发起读请求。客户端首先检查其多级本地缓存（内存缓存与磁盘缓存）。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Cache Hit:</span><span x-show="lang === 'zh'">缓存命中：</span></strong> <span x-show="lang === 'en'">If cache hits, data is returned directly from cache, with latency close to local read/write.</span><span x-show="lang === 'zh'">若缓存命中，则直接从缓存中返回数据，延迟接近本地读写。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Cache Miss:</span><span x-show="lang === 'zh'">缓存未命中：</span></strong> <span x-show="lang === 'en'">If cache misses, client requests file metadata from the metadata engine to get its data block mapping table.</span><span x-show="lang === 'zh'">若缓存未命中，客户端向元数据引擎请求该文件的元数据，获取其数据块映射表。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Concurrent Download:</span><span x-show="lang === 'zh'">并发下载：</span></strong> <span x-show="lang === 'en'">Client concurrently pulls required data slices (Block) directly from object storage based on the mapping table.</span><span x-show="lang === 'zh'">客户端根据映射表，直接从对象存储并发地拉取所需的数据分片（Block）。</span></li>
+                            <li><strong><span x-show="lang === 'en'">Data Reassembly & Caching:</span><span x-show="lang === 'zh'">数据重组与缓存：</span></strong> <span x-show="lang === 'en'">Client reassembles downloaded data slices into file data, returns it to the application, and writes it to local cache to accelerate subsequent access.</span><span x-show="lang === 'zh'">客户端将下载的数据分片重组为文件数据，返回给应用程序的同时，将其写入本地缓存，以加速后续的访问。</span></li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h4 class="text-xl font-semibold text-gray-700 mb-4 text-center mt-8">
+                    <span x-show="lang === 'en'">I/O Process Flowchart</span>
+                    <span x-show="lang === 'zh'">I/O流程图</span>
+                </h4>
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <!-- Row 1: Application -> JuiceFS Client -->
+                    <div class="flex items-center">
+                        <div class="flow-step">
+                            <i class="fas fa-laptop-code text-2xl text-blue-600"></i>
+                            <div class="flow-label"><span x-show="lang === 'en'">Application</span><span x-show="lang === 'zh'">应用程序</span></div>
+                        </div>
+                        <i class="fas fa-arrow-right flow-arrow"></i>
+                        <div class="flow-step">
+                            <i class="fas fa-cloud-meatball text-2xl text-green-600"></i>
+                            <div class="flow-label"><span x-show="lang === 'en'">JuiceFS Client</span><span x-show="lang === 'zh'">JuiceFS客户端</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Vertical Arrows from Client to Metadata/Object Storage -->
+                    <div class="flex items-center justify-center w-full">
+                        <div class="flex flex-col items-center mx-auto">
+                            <i class="fas fa-arrow-down flow-arrow"></i>
+                            <div class="flex items-start space-x-8">
+                                <!-- Metadata Path -->
+                                <div class="flex flex-col items-center">
+                                    <div class="flow-step">
+                                        <i class="fas fa-file-signature text-2xl text-purple-600"></i>
+                                        <div class="flow-label"><span x-show="lang === 'en'">Metadata Engine</span><span x-show="lang === 'zh'">元数据引擎</span></div>
+                                    </div>
+                                    <i class="fas fa-arrow-down flow-arrow"></i>
+                                    <div class="flow-step">
+                                        <i class="fas fa-database text-2xl text-purple-600"></i>
+                                        <div class="flow-label"><span x-show="lang === 'en'">Database (Redis/TiKV/SQL)</span><span x-show="lang === 'zh'">数据库 (Redis/TiKV/SQL)</span></div>
+                                    </div>
+                                </div>
+                                <!-- Object Storage Path -->
+                                <div class="flex flex-col items-center">
+                                    <div class="flow-step">
+                                        <i class="fas fa-cloud-upload-alt text-2xl text-orange-600"></i>
+                                        <div class="flow-label"><span x-show="lang === 'en'">Object Storage</span><span x-show="lang === 'zh'">对象存储</span></div>
+                                    </div>
+                                    <i class="fas fa-arrow-down flow-arrow"></i>
+                                    <div class="flow-step">
+                                        <i class="fas fa-hdd text-2xl text-orange-600"></i>
+                                        <div class="flow-label"><span x-show="lang === 'en'">Object Storage (S3/MinIO/Ceph)</span><span x-show="lang === 'zh'">对象存储 (S3/MinIO/Ceph)</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-gray-700 mt-8 leading-relaxed">
+                    <span x-show="lang === 'en'">This architecture is not merely a technical choice; it directly shapes JuiceFS's market strategy. By entrusting the two most complex stateful components—data persistence and metadata persistence—to external systems, JuiceFS can focus its R&D efforts on "intelligent" clients and stateless logic. This brings several key advantages:</span>
+                    <span x-show="lang === 'zh'">这种架构并非仅仅是技术选择，它直接塑造了JuiceFS的市场战略。<span class="highlight-num">通过将最复杂的两个有状态组件——数据持久化和元数据持久化——交由外部系统管理，JuiceFS得以将研发重心聚焦于“智能化”的客户端和无状态逻辑</span>。这带来了几个关键优势：</span>
+                </p>
+                <ul class="list-disc list-inside text-gray-700 space-y-2 mt-4">
+                    <li><i class="fas fa-check-circle mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">Extreme Flexibility and Cost-Effectiveness:</span><span x-show="lang === 'zh'">极致的灵活性与成本效益：</span></strong> <span x-show="lang === 'en'">Users can leverage existing, often low-cost, object storage and choose the most suitable metadata engine based on scale and performance needs (e.g., Redis for speed, TiKV for massive scale). This contrasts sharply with integrated hardware/software solutions.</span><span x-show="lang === 'zh'">用户可以利用已有的、通常成本低廉的对象存储，并根据规模和性能需求选择最合适的元数据引擎（例如，追求速度用Redis，追求海量规模用TiKV）。这与软硬件一体化的解决方案形成鲜明对比。</span></li>
+                    <li><i class="fas fa-check-circle mr-2 text-green-600"></i><span x-show="lang === 'en'">Performance Highly Dependent on Cache:</span><span x-show="lang === 'zh'">性能高度依赖缓存：</span></strong> <span x-show="lang === 'en'">This architecture inherently introduces network latency for data (object storage) and metadata (database) access. Therefore, JuiceFS's <strong>perceived performance</strong> heavily relies on the efficiency of its caching layer. This also explains why continuous optimization of caching is a top priority in its version iterations.</span><span x-show="lang === 'zh'">该架构天然地为数据（对象存储）和元数据（数据库）访问引入了网络延迟。因此，JuiceFS的<strong>感知性能</strong>严重依赖其缓存层的效率。这也解释了为何在其版本迭代中，对缓存的持续优化是重中之重。</span></li>
+                    <li><i class="fas fa-check-circle mr-2 text-green-600"></i><span x-show="lang === 'en'">Shared Operations Model:</span><span x-show="lang === 'zh'">共担的运维模型：</span></strong> <span x-show="lang === 'en'">Users share responsibility for the overall system's availability and performance by managing metadata and object storage backends. JuiceFS Cloud Service is precisely a solution addressing this, providing customers with managed metadata services.</span><span x-show="lang === 'zh'">用户通过管理元数据和对象存储后端，与JuiceFS共同承担了整个系统的可用性和性能责任。JuiceFS Cloud Service 正是针对这一点的解决方案，为客户提供了托管的元数据服务。</span></li>
+                </ul>
+            </div>
+
+            <!-- Subsection 1.2: Core Scenarios and Targeted Optimizations -->
+            <div id="scenario-optimization" class="block-spacing">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">1.2 Core Scenarios and Targeted Optimizations</span>
+                    <span x-show="lang === 'zh'">1.2 核心场景与针对性优化</span>
+                </h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    <span x-show="lang === 'en'">Over the past three years, JuiceFS's iterations have clearly revolved around four major scenarios: AI/ML, multi-cloud and hybrid cloud, big data analytics, and enterprise-grade management and security.</span>
+                    <span x-show="lang === 'zh'">过去三年，JuiceFS的迭代清晰地围绕着AI/ML、多云与混合云、大数据分析以及企业级管理与安全这四大场景展开。</span>
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="scenario-card">
+                        <i class="fas fa-brain scenario-icon"></i>
+                        <h4 class="scenario-title"><span x-show="lang === 'en'">AI/ML & HPC</span><span x-show="lang === 'zh'">AI/ML与高性能计算</span></h4>
+                        <p class="scenario-description">
+                            <span x-show="lang === 'en'">JuiceFS has become a main battlefield for AI/ML, with optimizations like Python SDK for <span class="highlight-num">3x faster</span> data loading, support for hundreds of billions of files, and distributed caching for GPU clusters.</span>
+                            <span x-show="lang === 'zh'">JuiceFS已成为AI/ML主战场，优化包括Python SDK实现<span class="highlight-num">3倍</span>数据加载速度提升、支持数千亿文件规模、以及为GPU集群提供分布式缓存。</span>
+                        </p>
+                    </div>
+                    <div class="scenario-card">
+                        <i class="fas fa-cloud-arrow-up scenario-icon"></i>
+                        <h4 class="scenario-title"><span x-show="lang === 'en'">Multi-Cloud & Hybrid Cloud</span><span x-show="lang === 'zh'">多云与混合云</span></h4>
+                        <p class="scenario-description">
+                            <span x-show="lang === 'en'">Key features include mirror file systems with write support for "active-active" multi-cloud deployments and pure metadata synchronization to reduce cross-cloud data transfer costs.</span>
+                            <span x-show="lang === 'zh'">关键特性包括支持写入的镜像文件系统实现“双活”多云部署，以及纯元数据同步以降低跨云数据传输成本。</span>
+                        </p>
+                    </div>
+                    <div class="scenario-card">
+                        <i class="fas fa-database scenario-icon"></i>
+                        <h4 class="scenario-title"><span x-show="lang === 'en'">Big Data & Data Analysis</span><span x-show="lang === 'zh'">大数据与数据分析</span></h4>
+                        <p class="scenario-description">
+                            <span x-show="lang === 'en'">Offers full HDFS compatibility for compute-storage separation in Hadoop ecosystems and enhanced S3 gateway with multi-user management and IAM-style policy control.</span>
+                            <span x-show="lang === 'zh'">提供HDFS完全兼容API实现Hadoop生态存算分离，以及增强S3网关支持多用户管理和IAM风格策略控制。</span>
+                        </p>
+                    </div>
+                    <div class="scenario-card">
+                        <i class="fas fa-shield-alt scenario-icon"></i>
+                        <h4 class="scenario-title"><span x-show="lang === 'en'">Enterprise Management & Security</span><span x-show="lang === 'zh'">企业级管理与安全</span></h4>
+                        <p class="scenario-description">
+                            <span x-show="lang === 'en'">Features centralized management via console for client upgrades/debugging, enhanced security with POSIX ACL and default object storage credential encryption, and seamless client upgrades.</span>
+                            <span x-show="lang === 'zh'">支持通过控制台集中管理客户端升级和调试，通过POSIX ACL和默认对象存储凭证加密增强安全性，并实现客户端无中断平滑升级。</span>
+                        </p>
+                    </div>
+                </div>
+
+                <p class="text-gray-700 mt-8 leading-relaxed">
+                    <span x-show="lang === 'en'">Analyzing the Community Edition (CE) and Enterprise Edition (EE) release notes reveals a clear "dual-track" development model. Core API innovations and performance optimizations (e.g., Python SDK, SQL performance improvements) typically appear first in the open-source community edition. Subsequently, these features are productized and hardened in the enterprise edition, deeply integrated with enterprise-grade management capabilities (e.g., console). Features addressing extreme scale and complex enterprise problems, such as writable mirrors and support for hundreds of billions of files, remain exclusive advantages of the enterprise edition. This strategy is highly efficient: the open-source community edition drives widespread adoption and technical innovation, forming a feature funnel; the enterprise edition captures commercial value by solving "last-mile" problems (e.g., security, manageability, extreme scale) that large enterprises are willing to pay for.</span>
+                    <span x-show="lang === 'zh'">分析社区版（CE）和企业版（EE）的发布说明，可以发现一种清晰的“双轨”发展模式。核心API创新和性能优化（如Python SDK、SQL性能提升）通常首先出现在开源社区版中，这不仅能快速验证功能，还能借助社区力量推动创新。随后，这些功能会在企业版中被产品化、加固，并与企业级管理能力（如控制台）深度集成。而那些解决极端规模和复杂企业问题的特性，如可写镜像和千亿级文件支持，则作为企业版的独占优势。这种策略非常高效：开源社区版驱动广泛采用和技术创新，形成功能漏斗；企业版则通过解决大型企业愿意付费的“最后一公里”问题（如安全性、可管理性、极端规模）来捕获商业价值。</span>
+                </p>
+            </div>
+
+            <!-- Subsection 1.3: JuiceFS Version Highlights Summary -->
+            <div id="version-highlights" class="block-spacing">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">1.3 JuiceFS Version Highlights Summary (Community Edition vs. Enterprise Edition, 2022-2025)</span>
+                    <span x-show="lang === 'zh'">1.3 JuiceFS 版本亮点汇总 (社区版 vs. 企业版, 2022-2025)</span>
+                </h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    <span x-show="lang === 'en'">The table below concisely summarizes the evolution of JuiceFS's two versions in key areas over the past three years, revealing the focus of its feature iterations and strategic differences between versions.</span>
+                    <span x-show="lang === 'zh'">下表简明扼要地总结了过去三年中JuiceFS两个版本在关键领域的演进，揭示了其功能迭代的重点和版本间的战略差异。</span>
+                </p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th><span x-show="lang === 'en'">Category</span><span x-show="lang === 'zh'">类别</span></th>
+                            <th><span x-show="lang === 'en'">Version Type</span><span x-show="lang === 'zh'">版本类型</span></th>
+                            <th><span x-show="lang === 'en'">Version (Approx. Date)</span><span x-show="lang === 'zh'">版本 (大致日期)</span></th>
+                            <th><span x-show="lang === 'en'">Key Features & Significance</span><span x-show="lang === 'zh'">关键特性与意义</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="5"><strong><span x-show="lang === 'en'">AI/ML & Performance</span><span x-show="lang === 'zh'">AI/ML与性能</span></strong></td>
+                            <td><span x-show="lang === 'en'">Community Edition</span><span x-show="lang === 'zh'">社区版</span></td>
+                            <td><span x-show="lang === 'en'">v1.1+ (2023 End)</span><span x-show="lang === 'zh'">v1.1+ (2023年末)</span></td>
+                            <td><span x-show="lang === 'en'">Metadata performance optimization (mknod, scan), improved warmup and fsck tools.</span><span x-show="lang === 'zh'">元数据性能优化 (mknod, scan)，改进warmup和fsck工具。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Community Edition</span><span x-show="lang === 'zh'">社区版</span></td>
+                            <td><span x-show="lang === 'en'">v1.3 Beta (2025 Mid)</span><span x-show="lang === 'zh'">v1.3 Beta (2025年中)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Python SDK</span><span x-show="lang === 'zh'">Python SDK</span></strong> <span x-show="lang === 'en'">achieves <span class="highlight-num">3x faster</span> data loading than FUSE; enhanced SQL database support for billion-file scale.</span><span x-show="lang === 'zh'">实现比FUSE快<span class="highlight-num">3倍</span>的数据加载；增强SQL数据库支持，应对十亿级文件规模。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Enterprise Edition</span><span x-show="lang === 'zh'">企业版</span></td>
+                            <td><span x-show="lang === 'en'">v5.0 (2023 End)</span><span x-show="lang === 'zh'">v5.0 (2023年末)</span></td>
+                            <td><span x-show="lang === 'en'">Supports shared block devices for accelerated small file I/O; enhanced observability and management of distributed cache.</span><span x-show="lang === 'zh'">支持共享块设备以加速小文件I/O；增强分布式缓存的可观测性与管理能力。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Enterprise Edition</span><span x-show="lang === 'zh'">企业版</span></td>
+                            <td><span x-show="lang === 'en'">v5.1 (2024 End)</span><span x-show="lang === 'zh'">v5.1 (2024年末)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Officially integrated Python SDK</span><span x-show="lang === 'zh'">正式集成Python SDK</span></strong>; <span x-show="lang === 'en'">distributed cache supports replicas, enhancing reliability.</span><span x-show="lang === 'zh'">分布式缓存支持副本，增强可靠性。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Enterprise Edition</span><span x-show="lang === 'zh'">企业版</span></td>
+                            <td><span x-show="lang === 'en'">v5.2 (2025 Mid)</span><span x-show="lang === 'zh'">v5.2 (2025年中)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Supports ultra-large scale of hundreds of billions of files</span><span x-show="lang === 'zh'">支持数千亿文件的超大规模</span></strong>; <span x-show="lang === 'en'">introduces zero-copy technology and network optimization.</span><span x-show="lang === 'zh'">引入零拷贝技术和网络优化。</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">Multi-Cloud/Replication</span><span x-show="lang === 'zh'">多云/复制</span></strong></td>
+                            <td><span x-show="lang === 'en'">Enterprise Edition</span><span x-show="lang === 'zh'">企业版</span></td>
+                            <td><span x-show="lang === 'en'">v5.1 (2024 End)</span><span x-show="lang === 'zh'">v5.1 (2024年末)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Mirror file system supports writing</span><span x-show="lang === 'zh'">镜像文件系统支持写入</span></strong>, <span x-show="lang === 'en'">enabling true "active-active" multi-cloud deployment.</span><span x-show="lang === 'zh'">实现真正的“双活”多云部署。</span></td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3"><strong><span x-show="lang === 'en'">Big Data & Protocols</span><span x-show="lang === 'zh'">大数据与协议</span></strong></td>
+                            <td><span x-show="lang === 'en'">Community Edition</span><span x-show="lang === 'zh'">社区版</span></td>
+                            <td><span x-show="lang === 'en'">v1.2 (2024 Mid)</span><span x-show="lang === 'zh'">v1.2 (2024年中)</span></td>
+                            <td><span x-show="lang === 'en'">Enhanced S3 gateway capabilities; supports NFS as underlying storage.</span><span x-show="lang === 'zh'">增强S3网关能力；支持将NFS作为底层存储。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Community Edition</span><span x-show="lang === 'zh'">社区版</span></td>
+                            <td><span x-show="lang === 'en'">v1.3 Beta 2 (2025 Mid)</span><span x-show="lang === 'zh'">v1.3 Beta 2 (2025年中)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Integrated Apache Ranger</span><span x-show="lang === 'zh'">集成Apache Ranger</span></strong>, <span x-show="lang === 'en'">providing fine-grained access control for Hadoop ecosystem.</span><span x-show="lang === 'zh'">为Hadoop生态提供细粒度访问控制。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Enterprise Edition</span><span x-show="lang === 'zh'">企业版</span></td>
+                            <td><span x-show="lang === 'en'">v5.1 (2024 End)</span><span x-show="lang === 'zh'">v5.1 (2024年末)</span></td>
+                            <td><span x-show="lang === 'en'">S3 gateway supports multi-user management and IAM-like features.</span><span x-show="lang === 'zh'">S3网关支持多用户管理和类IAM功能。</span></td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2"><strong><span x-show="lang === 'en'">Security & Management</span><span x-show="lang === 'zh'">安全与管理</span></strong></td>
+                            <td><span x-show="lang === 'en'">Community Edition</span><span x-show="lang === 'zh'">社区版</span></td>
+                            <td><span x-show="lang === 'en'">v1.2 (2024 Mid)</span><span x-show="lang === 'zh'">v1.2 (2024年中)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Supports POSIX ACL</span><span x-show="lang === 'zh'">支持POSIX ACL</span></strong>; <span x-show="lang === 'en'">achieves non-disruptive smooth client upgrades.</span><span x-show="lang === 'zh'">实现客户端无中断平滑升级。</span></td>
+                        </tr>
+                        <tr>
+                            <td><span x-show="lang === 'en'">Enterprise Edition</span><span x-show="lang === 'zh'">企业版</span></td>
+                            <td><span x-show="lang === 'en'">v5.2 (2025 Mid)</span><span x-show="lang === 'zh'">v5.2 (2025年中)</span></td>
+                            <td><strong><span x-show="lang === 'en'">Default encryption of storage access credentials</span><span x-show="lang === 'zh'">默认加密存储访问凭证</span></strong>; <span x-show="lang === 'en'">one-click client management from console.</span><span x-show="lang === 'zh'">从控制台一键管理客户端。</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 2: Future Trajectory and Competitive Landscape -->
+        <section id="future-outlook" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Future Trajectory and Competitive Landscape</span>
+                <span x-show="lang === 'zh'">二、未来轨迹与竞争格局</span>
+            </h2>
+
+            <!-- Subsection 2.1: JuiceFS Future Evolution Speculation -->
+            <div id="future-evolution" class="block-spacing">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">2.1 JuiceFS Future Evolution Speculation</span>
+                    <span x-show="lang === 'zh'">2.1 JuiceFS 的未来演进推测</span>
+                </h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    <span x-show="lang === 'en'">Based on current technological trends and market demands, JuiceFS's future development may focus on the following directions:</span>
+                    <span x-show="lang === 'zh'">基于当前的技术趋势和市场需求，JuiceFS的未来发展可能会聚焦于以下几个方向：</span>
+                </p>
+                <ul class="list-disc list-inside text-gray-700 space-y-2">
+                    <li><i class="fas fa-microchip mr-2 text-blue-600"></i><strong><span x-show="lang === 'en'">Deepen AI-Native Data Services:</span><span x-show="lang === 'zh'">深化AI原生数据服务：</span></strong> <span x-show="lang === 'en'">JuiceFS will not only provide storage but also offer more capabilities to assist the AI data lifecycle. This may include more powerful built-in data versioning, data content search and cataloging, and tighter integration with MLOps platforms.</span><span x-show="lang === 'zh'">JuiceFS将不仅仅满足于提供存储，而是会提供更多辅助AI数据生命周期的能力。这可能包括更强大的内置数据版本控制、数据内容搜索与编目以及与MLOps平台的更紧密集成。</span></li>
+                    <li><i class="fas fa-network-wired mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">More Complex Intelligent Data Orchestration:</span><span x-show="lang === 'zh'">更复杂的智能数据编排：</span></strong> <span x-show="lang === 'en'">Existing mirroring functions are initial attempts at data movement. Future evolution will involve finer-grained, policy-driven data flow. Users will be able to define smarter rules for data tiering, replication, and caching across storage tiers (not just across clouds).</span><span x-show="lang === 'zh'">现有的镜像功能是一种数据复制。未来的演进方向将是更细粒度的、基于策略的数据流动。用户将能够定义更智能的规则，用于跨存储层级（而不仅仅是跨云）的数据分层、复制和缓存。</span></li>
+                    <li><i class="fas fa-cloud-upload-alt mr-2 text-orange-600"></i><strong><span x-show="lang === 'en'">Core Position of Enterprise Edition/Cloud Services:</span><span x-show="lang === 'zh'">企业版/云服务的核心地位：</span></strong> <span x-show="lang === 'en'">For many users, self-managing metadata databases is a significant operational burden. Therefore, a fully managed, out-of-the-box JuiceFS cloud service will increasingly become central to its business model, lowering the barrier to entry for users.</span><span x-show="lang === 'zh'">对于许多用户而言，自行管理元数据数据库是一个显著的运维负担。因此，一个完全托管的、开箱即用的JuiceFS云服务将越来越成为其商业模式的核心，以此来降低用户的使用门槛。</span></li>
+                </ul>
+            </div>
+
+            <!-- Subsection 2.2: Comparative Analysis: JuiceFS vs. Mainstream Industry Solutions -->
+            <div id="competitor-analysis" class="block-spacing">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">2.2 Comparative Analysis: JuiceFS vs. Mainstream Industry Solutions</span>
+                    <span x-show="lang === 'zh'">2.2 对比分析：JuiceFS与业界主流方案</span>
+                </h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    <span x-show="lang === 'en'">The table below compares JuiceFS with its main competitors from core architecture and strategic perspectives. For solution architects, this is the most critical tool for mapping technology to business problems, as architecture determines capabilities, limitations, and cost models.</span>
+                    <span x-show="lang === 'zh'">下表从核心架构和战略层面，对JuiceFS及其主要竞争对手进行了对比。对于解决方案架构师而言，这是将技术映射到业务问题的最关键工具，因为架构决定了能力、局限和成本模型。</span>
+                </p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th><span x-show="lang === 'en'">Dimension</span><span x-show="lang === 'zh'">维度</span></th>
+                            <th><span x-show="lang === 'en'">JuiceFS</span><span x-show="lang === 'zh'">JuiceFS</span></th>
+                            <th><span x-show="lang === 'en'">Hammerspace</span><span x-show="lang === 'zh'">Hammerspace</span></th>
+                            <th><span x-show="lang === 'en'">Alluxio</span><span x-show="lang === 'zh'">Alluxio</span></th>
+                            <th><span x-show="lang === 'en'">Weka</span><span x-show="lang === 'zh'">Weka</span></th>
+                            <th><span x-show="lang === 'en'">VAST Data</span><span x-show="lang === 'zh'">VAST Data</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">Core Philosophy</span><span x-show="lang === 'zh'">核心理念</span></strong></td>
+                            <td><span x-show="lang === 'en'"><strong>Decoupled Software</strong> based on commercial storage</span><span x-show="lang === 'zh'">基于商用存储的<strong>解耦式软件</strong></span></td>
+                            <td><span x-show="lang === 'en'"><strong>Global Data Orchestrator</strong> (control plane) covering existing storage</span><span x-show="lang === 'zh'">覆盖现有存储的<strong>全局数据编排器</strong>（控制面）</span></td>
+                            <td><span x-show="lang === 'en'"><strong>Data Access/Caching Acceleration Layer</strong> (non-persistent storage)</span><span x-show="lang === 'zh'"><strong>数据访问/缓存加速层</strong>（非持久化存储）</span></td>
+                            <td><span x-show="lang === 'en'"><strong>Software-Hardware Integrated Parallel File System</strong></span><span x-show="lang === 'zh'"><strong>软硬一体的并行文件系统</strong></span></td>
+                            <td><span x-show="lang === 'en'"><strong>Compute-Storage Disaggregated, Shared Everything (DASE) Platform</strong></span><span x-show="lang === 'zh'"><strong>存算分离、万物共享（DASE）平台</strong></span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">Metadata Architecture</span><span x-show="lang === 'zh'">元数据架构</span></strong></td>
+                            <td><span x-show="lang === 'en'"><strong>Pluggable Databases</strong> (Redis, TiKV, SQL, etc.)</span><span x-show="lang === 'zh'"><strong>可插拔数据库</strong> (Redis, TiKV, SQL等)</span></td>
+                            <td><span x-show="lang === 'en'"><strong>Distributed, Out-of-Band</strong> Metadata Servers</span><span x-show="lang === 'zh'"><strong>分布式、带外</strong>的元数据服务器</span></td>
+                            <td><span x-show="lang === 'en'"><strong>Master Node</strong>, persisted by RocksDB or Under File System (UFS)</span><span x-show="lang === 'zh'"><strong>Master节点</strong>，由RocksDB或底层文件系统(UFS)持久化</span></td>
+                            <td><span x-show="lang === 'en'"><strong>Distributed and Integrated</strong> with backend compute processes</span><span x-show="lang === 'zh'"><strong>分布式并集成</strong>于后端计算进程</span></td>
+                            <td><span x-show="lang === 'en'"><strong>Shared Everything Storage</strong>, no single owner</span><span x-show="lang === 'zh'"><strong>万物共享的元素存储</strong>，无单一所有者</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">Data Path</span><span x-show="lang === 'zh'">数据路径</span></strong></td>
+                            <td><span x-show="lang === 'en'">Client ↔ Metadata DB<br>Client ↔ Object Storage</span><span x-show="lang === 'zh'">客户端 ↔ 元数据DB<br>客户端 ↔ 对象存储</span></td>
+                            <td><span x-show="lang === 'en'">Client ↔ pNFS ↔ Storage</span><span x-show="lang === 'zh'">客户端 ↔ pNFS ↔ 存储</span></td>
+                            <td><span x-show="lang === 'en'">Client ↔ Worker Cache ↔ UFS</span><span x-show="lang === 'zh'">客户端 ↔ Worker缓存 ↔ UFS</span></td>
+                            <td><span x-show="lang === 'en'">Client ↔ Backend ↔ NVMe</span><span x-show="lang === 'zh'">客户端 ↔ 后端 ↔ NVMe</span></td>
+                            <td><span x-show="lang === 'en'">Client ↔ CNode ↔ EBox ↔ Flash</span><span x-show="lang === 'zh'">客户端 ↔ CNode ↔ EBox ↔ 闪存</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">Persistence Model</span><span x-show="lang === 'zh'">持久化模型</span></strong></td>
+                            <td><span x-show="lang === 'en'">Fully relies on <strong>external</strong> object storage/NFS</span><span x-show="lang === 'zh'">完全依赖<strong>外部</strong>对象存储/NFS</span></td>
+                            <td><span x-show="lang === 'en'">Orchestrates <strong>existing</strong> third-party storage</span><span x-show="lang === 'zh'">编排<strong>现有的</strong>第三方存储</span></td>
+                            <td><span x-show="lang === 'en'">Fully relies on <strong>external</strong> UFS</span><span x-show="lang === 'zh'">完全依赖<strong>外部</strong>的UFS</span></td>
+                            <td><span x-show="lang === 'en'">Manages <strong>own</strong> NVMe layer; can tier to object storage</span><span x-show="lang === 'zh'">管理<strong>自有</strong>NVMe层；可分层到对象存储</span></td>
+                            <td><span x-show="lang === 'en'">Manages <strong>own</strong> flash layer; DASE architecture</span><span x-show="lang === 'zh'">管理<strong>自有</strong>闪存层；DASE架构</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">Key Differentiators</span><span x-show="lang === 'zh'">关键差异点</span></strong></td>
+                            <td><span x-show="lang === 'en'">Flexibility, Cost, Open Source</span><span x-show="lang === 'zh'">灵活性、成本、开源</span></td>
+                            <td><span x-show="lang === 'en'">In-place Data Unification, pNFS</span><span x-show="lang === 'zh'">原位数据统一、pNFS</span></td>
+                            <td><span x-show="lang === 'en'">Memory-level Caching, Query Acceleration</span><span x-show="lang === 'zh'">内存级缓存、查询加速</span></td>
+                            <td><span x-show="lang === 'en'">Extreme Performance, Native POSIX</span><span x-show="lang === 'zh'">极致性能、原生POSIX</span></td>
+                            <td><span x-show="lang === 'en'">Breaking Trade-offs, Unified Platform</span><span x-show="lang === 'zh'">打破权衡、统一平台</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><span x-show="lang === 'en'">AI/ML Perspective</span><span x-show="lang === 'zh'">AI/ML视角</span></strong></td>
+                            <td><span x-show="lang === 'en'">Cost-effective storage for cloud AI training</span><span x-show="lang === 'zh'">云上AI训练的经济高效存储方案</span></td>
+                            <td><span x-show="lang === 'en'">Data mobility across hybrid clouds, data supply for GPUs</span><span x-show="lang === 'zh'">跨混合云的数据移动，为GPU供给数据</span></td>
+                            <td><span x-show="lang === 'en'">Accelerating data loading and queries</span><span x-show="lang === 'zh'">加速数据加载与查询</span></td>
+                            <td><span x-show="lang === 'en'">High-performance local AI data plane</span><span x-show="lang === 'zh'">高性能本地AI数据平面</span></td>
+                            <td><span x-show="lang === 'en'">Ultra-scale AI platform; "AI Operating System"</span><span x-show="lang === 'zh'">超大规模AI平台；“AI操作系统”</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="text-xl font-semibold text-gray-700 mb-4 mt-8">
+                    <span x-show="lang === 'en'">In-depth Analysis of Each Solution:</span>
+                    <span x-show="lang === 'zh'">各方案深度剖析：</span>
+                </h4>
+                <ul class="list-disc list-inside text-gray-700 space-y-3 text-sm">
+                    <li><strong><span x-show="lang === 'en'">Hammerspace:</span><span x-show="lang === 'zh'">Hammerspace：</span></strong> <span x-show="lang === 'en'">Its unique value lies in achieving <strong>data-in-place orchestration</strong> through standard <strong>pNFS</strong>. It integrates disparate, heterogeneous existing storage systems into a global namespace without prior data migration. Its "Tier 0" concept activates local NVMe disks within GPU servers as a shared high-performance caching layer, directly and innovatively addressing GPU I/O bottlenecks.</span><span x-show="lang === 'zh'">其独特的价值在于通过标准的<strong>pNFS</strong>实现<strong>原位数据编排（data-in-place orchestration）</strong>。它能在无需预先迁移所有数据的情况下，将分散、异构的现有存储系统整合成一个全局命名空间。这对于拥有复杂、难以迁移的遗留数据孤岛的组织极具吸引力。其“Tier 0”存储概念，将GPU服务器内的本地NVMe盘活成一个共享的高性能缓存层，是对GPU I/O瓶颈的直接且创新的回应。</span></li>
+                    <li><strong><span x-show="lang === 'en'">Alluxio:</span><span x-show="lang === 'zh'">Alluxio：</span></strong> <span x-show="lang === 'en'">Clearly positions itself as a <strong>data access acceleration layer</strong>, not a persistent file system. Its advantage lies in memory-centric caching, designed to sit between compute frameworks (like Spark, Presto) and various "Under File Systems" (UFS). Recent developments focus on providing high-performance APIs and targeted AI workload acceleration, such as model distribution and fast point queries for Parquet files.</span><span x-show="lang === 'zh'">明确将自己定位为<strong>数据访问加速层</strong>，而非持久化文件系统。其优势在于以内存为中心的缓存，设计初衷就是位于计算框架（如Spark、Presto）和各种“底层文件系统”（UFS）之间。近期的发展重点是提供高性能API和针对性的AI工作负载加速，如模型分发和Parquet文件的快速点查。</span></li>
+                    <li><strong><span x-show="lang === 'en'">Weka:</span><span x-show="lang === 'zh'">Weka：</span></strong> <span x-show="lang === 'en'">A <strong>high-performance parallel file system</strong> designed from scratch for NVMe flash. Its architecture, including a custom RTOS running in user space and distributed data/metadata functions, is geared towards extreme performance and low latency, primarily targeting the most demanding HPC and AI workloads. It directly competes with traditional parallel file systems like Lustre and GPFS but employs a more modern software-defined approach.</span><span x-show="lang === 'zh'">一个从零开始为NVMe闪存设计的<strong>高性能并行文件系统</strong>。其架构，包括在用户空间运行的定制RTOS和分布式的数据/元数据功能，都是为了追求极致性能和低延迟，主要目标是要求最苛刻的HPC和AI工作负载。它与Lustre、GPFS等传统并行文件系统直接竞争，但采用了更现代的软件定义方法。</span></li>
+                    <li><strong><span x-show="lang === 'en'">VAST Data:</span><span x-show="lang === 'zh'">VAST Data：</span></strong> <span x-show="lang === 'en'">Has the most ambitious vision among all competitors, aiming to become a unified <strong>"AI operating system."</strong> Its DASE (Disaggregated and Shared Everything) architecture separates compute and storage but allows all nodes to access all storage in a "shared everything" model, attempting to break traditional trade-offs between performance, scale, and cost. By integrating DataStore, DataBase, and DataEngine, VAST tries to compress the entire data stack into one platform.</span><span x-show="lang === 'zh'">是所有竞品中愿景最宏大的，旨在成为一个统一的 <strong>“AI操作系统”</strong>。其DASE架构（Disaggregated and Shared Everything）将计算和存储分离，但又允许所有节点以“万物共享”的模式访问所有存储，试图打破性能、规模和成本之间的传统权衡。通过整合DataStore、DataBase和和DataEngine，VAST试图将整个数据栈压缩到一个平台中。</span></li>
+                </ul>
+            </div>
+
+            <!-- Subsection 2.3: Strategic Insights and Technical Borrowing -->
+            <div id="strategic-insights" class="block-spacing">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">2.3 Strategic Insights and Technical Borrowing</span>
+                    <span x-show="lang === 'zh'">2.3 战略洞察与技术借鉴</span>
+                </h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    <span x-show="lang === 'en'">These five solutions represent a spectrum of technologies from fully decoupled to fully integrated: JuiceFS/Alluxio (decoupled) &lt; Hammerspace (orchestration) &lt; Weka/VAST (integrated).</span>
+                    <span x-show="lang === 'zh'">这五种解决方案代表了从完全解耦到完全集成的技术光谱：JuiceFS/Alluxio (解耦) &lt; Hammerspace (编排) &lt; Weka/VAST (集成)。</span>
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-700 mb-3">
+                            <span x-show="lang === 'en'">JuiceFS Learnings:</span>
+                            <span x-show="lang === 'zh'">JuiceFS可借鉴之处：</span>
+                        </h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 text-sm">
+                            <li><i class="fas fa-lightbulb mr-2 text-blue-600"></i><strong><span x-show="lang === 'en'">From VAST's Unified Vision:</span><span x-show="lang === 'zh'">从VAST的统一愿景中：</span></strong> <span x-show="lang === 'en'">While decoupling is JuiceFS's strength, the operational simplicity of integrated platforms is also appealing. JuiceFS could offer more "standardized" deployment packages (e.g., bundling JuiceFS, TiKV, and MinIO into an Operator or appliance) to provide a VAST-like solution for customers seeking an out-of-the-box experience.</span><span x-show="lang === 'zh'">虽然解耦是JuiceFS的优势，但集成平台的运维简便性同样诱人。JuiceFS可以提供更“标准化”的部署包（例如，将JuiceFS、TiKV和MinIO打包成一个Operator或一体机），为追求开箱即用体验的客户提供类似VAST的方案。</span></li>
+                            <li><i class="fas fa-lightbulb mr-2 text-blue-600"></i><strong><span x-show="lang === 'en'">From Hammerspace's Intelligent Orchestration:</span><span x-show="lang === 'zh'">从Hammerspace的智能编排中：</span></strong> <span x-show="lang === 'en'">JuiceFS's import and mirror functions are initial attempts at data movement. Introducing a more complex, policy-driven orchestration engine, similar to Hammerspace, could enable JuiceFS to manage data more intelligently across storage tiers (rather than just across clouds).</span><span x-show="lang === 'zh'">JuiceFS的import和mirror功能是数据移动的初步尝试。引入类似Hammerspace的、更复杂的策略驱动编排引擎，可以让JuiceFS更智能地管理跨存储层级（而非仅仅跨云）的数据。</span></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-700 mb-3">
+                            <span x-show="lang === 'en'">Competitors Learnings from JuiceFS:</span>
+                            <span x-show="lang === 'zh'">竞争对手可从JuiceFS借鉴之处：</span>
+                        </h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 text-sm">
+                            <li><i class="fas fa-lightbulb mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">The Power of "Bring Your Own Storage" Model:</span><span x-show="lang === 'zh'">“自带存储”模式的力量：</span></strong> <span x-show="lang === 'en'">In the era dominated by cloud-native and object storage, forcing customers to use proprietary persistent layers (like Weka/VAST) can become a significant market barrier. JuiceFS's ability to build directly on existing S3 buckets is a huge strategic advantage for cloud-native customers.</span><span x-show="lang === 'zh'">在云原生和对象存储主导的时代，强迫客户使用专有的持久化层（如Weka/VAST）可能成为一个重要的市场阻力。JuiceFS能够直接构建于现有S3存储桶之上的能力，对于云原生客户而言是一个巨大的战略优势。</span></li>
+                            <li><i class="fas fa-lightbulb mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">Pragmatism and Open Source Power:</span><span x-show="lang === 'zh'">务实主义与开源力量：</span></strong> <span x-show="lang === 'en'">JuiceFS's strong open-source community and its focus on solving real-world problems with flexible, pragmatic solutions have earned it a loyal user base. This contrasts with some competitors' top-down, "we have the only correct architecture" approaches.</span><span x-show="lang === 'zh'">JuiceFS强大的开源社区，以及其专注于用灵活、务实的方案解决真实世界问题的做法，为其赢得了忠实的用户群体。这与一些竞争对手自上而下的、“我们拥有唯一正确架构”的路线形成了对比。</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Conclusion and Strategic Recommendations -->
+        <section id="conclusion" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Conclusion and Strategic Recommendations</span>
+                <span x-show="lang === 'zh'">三、结论与战略建议</span>
+            </h2>
+            <p class="text-gray-700 mb-4 leading-relaxed">
+                <span x-show="lang === 'en'">This report systematically analyzed JuiceFS's technical evolution and market positioning. Overall, JuiceFS has successfully developed into a mature, flexible, and cost-effective distributed file system. Its roadmap clearly indicates its continued focus on meeting the demands of modern AI/ML, big data, and multi-cloud workloads. Its core strength lies in the extreme flexibility offered by its decoupled architecture, while its main challenge is how to help users manage the inherent complexity and potential latency of this architecture.</span>
+                <span x-show="lang === 'zh'">本报告对JuiceFS的技术演进和市场定位进行了系统性分析，综合来看，JuiceFS已成功发展为一个成熟、灵活且高性价比的分布式文件系统。其发展路线图清晰地表明了其持续聚焦于满足现代AI/ML、大数据和多云工作负载需求的战略方向。其核心优势在于解耦架构带来的极致灵活性，而其主要挑战则在于如何帮助用户管理这种架构下固有的复杂性和潜在延迟。</span>
+            </p>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                <span x-show="lang === 'en'">Architecture Selection Framework</span>
+                <span x-show="lang === 'zh'">架构选型框架</span>
+            </h3>
+            <p class="text-gray-700 mb-4 leading-relaxed">
+                <span x-show="lang === 'en'">As a solution architect, when facing different business needs, you can refer to the following decision framework:</span>
+                <span x-show="lang === 'zh'">作为解决方案架构师，在面对不同业务需求时，可参考以下决策框架：</span>
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2">
+                <li><i class="fas fa-check-circle mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">Choose JuiceFS:</span><span x-show="lang === 'zh'">选择JuiceFS：</span></strong> <span x-show="lang === 'en'">When your primary drivers are <strong>cost-effectiveness, flexibility, and full utilization of existing cloud object storage</strong>. For cloud-based AI/ML training and data analytics platforms where data already resides in S3-compatible services and elastic scalability is desired, JuiceFS is an ideal storage layer solution.</span><span x-show="lang === 'zh'">当你的首要驱动因素是<strong>成本效益、灵活性和充分利用现有云对象存储</strong>时。对于那些数据已存在于S3兼容服务中、且追求弹性扩展的云上AI/ML训练和数据分析平台，JuiceFS是理想的存储层解决方案。</span></li>
+                <li><i class="fas fa-check-circle mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">Choose Hammerspace:</span><span x-show="lang === 'zh'">选择Hammerspace：</span></strong> <span x-show="lang === 'en'">When the core problem is <strong>data mobility and unifying heterogeneous, geographically dispersed storage silos without migration</strong>. If you need to present data scattered across local NAS and multiple cloud storage buckets as a unified, coherent namespace to applications, Hammerspace's orchestration model is designed for this.</span><span x-show="lang === 'zh'">当核心问题是<strong>数据移动性以及在无需迁移的情况下统一异构、地理分散的存储孤岛</strong>时。如果你需要将散落在本地NAS和多个云存储桶中的数据，以一个统一、连贯的命名空间呈现给应用程序，Hammerspace的编排模型为此而生。</span></li>
+                <li><i class="fas fa-check-circle mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">Choose Alluxio:</span><span x-show="lang === 'zh'">选择Alluxio：</span></strong> <span x-show="lang === 'en'">When the demand is clearly for a <strong>high-performance caching/acceleration layer</strong> for existing applications (e.g., Presto/Spark queries) and defined underlying file systems (UFS), and the solution itself is not required to be persistent storage.</span><span x-show="lang === 'zh'">当需求明确为针对现有应用（如Presto/Spark查询）和已定义的底层文件系统（UFS）的<strong>高性能缓存/加速层</strong>，且不需要该方案本身作为持久化存储时。</span></li>
+                <li><i class="fas fa-check-circle mr-2 text-green-600"></i><strong><span x-show="lang === 'en'">Choose Weka or VAST Data:</span><span x-show="lang === 'zh'">选择Weka或VAST Data：</span></strong> <span x-show="lang === 'en'">When the primary task is to provide <strong>extreme, predictable local I/O performance</strong> for demanding HPC or large-scale AI workloads. These solutions are best suited for "greenfield" projects, where you are building a complete high-performance data stack and prefer an integrated, appliance-like experience and support from a single vendor.</span><span x-show="lang === 'zh'">当首要任务是为要求严苛的HPC或大规模AI工作负载提供<strong>极致的、可预测的本地I/O性能</strong>时。这些解决方案最适合“绿地”项目，即你正在构建一个完整的高性能数据栈，并倾向于从单一供应商处获得集成化、一体机式的简便体验和支持。</span></li>
+            </ul>
+        </section>
+
+        <!-- References Section -->
+        <section id="references" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">References</span>
+                <span x-show="lang === 'zh'">参考资料</span>
+            </h2>
+            <ol class="list-decimal list-inside text-gray-700 space-y-2 text-sm">
+                <li><span x-show="lang === 'en'">Introduction to JuiceFS | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/introduction/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/introduction/</a></span><span x-show="lang === 'zh'">Introduction to JuiceFS | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/introduction/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/introduction/</a></span></li>
+                <li><span x-show="lang === 'en'">Architecture | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/architecture" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/architecture</a></span><span x-show="lang === 'zh'">Architecture | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/architecture" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/architecture</a></span></li>
+                <li><span x-show="lang === 'en'">Code-Level Analysis: Design Principles of JuiceFS Metadata and Data Storage, accessed on June 29, 2025, <a href="https://juicefs.medium.com/code-level-analysis-design-principles-of-juicefs-metadata-and-data-storage-4223d3f448e8" class="text-blue-600 hover:underline" target="_blank">https://juicefs.medium.com/code-level-analysis-design-principles-of-juicefs-metadata-and-data-storage-4223d3f448e8</a></span><span x-show="lang === 'zh'">Code-Level Analysis: Design Principles of JuiceFS Metadata and Data Storage, accessed on June 29, 2025, <a href="https://juicefs.medium.com/code-level-analysis-design-principles-of-juicefs-metadata-and-data-storage-4223d3f448e8" class="text-blue-600 hover:underline" target="_blank">https://juicefs.medium.com/code-level-analysis-design-principles-of-juicefs-metadata-and-data-storage-4223d3f448e8</a></span></li>
+                <li><span x-show="lang === 'en'">FAQ | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/faq" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/faq</a></span><span x-show="lang === 'zh'">FAQ | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/faq" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/faq</a></span></li>
+                <li><span x-show="lang === 'en'">Accelerating Deep Learning Model Training on Object Storage with JuiceFS: A Use Case from Unisound, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/user-stories/storage-evolution-of-unisound-hpc-platform-with-juicefs" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/user-stories/storage-evolution-of-unisound-hpc-platform-with-juicefs</a></span><span x-show="lang === 'zh'">Accelerating Deep Learning Model Training on Object Storage with JuiceFS: A Use Case from Unisound, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/user-stories/storage-evolution-of-unisound-hpc-platform-with-juicefs" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/user-stories/storage-evolution-of-unisound-hpc-platform-with-juicefs</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS Community Edition, accessed on June 29, 2025, <a href="https://juicefs.com/en/product/community-edition" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/product/community-edition</a></span><span x-show="lang === 'zh'">JuiceFS Community Edition, accessed on June 29, 2025, <a href="https://juicefs.com/en/product/community-edition" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/product/community-edition</a></span></li>
+                <li><span x-show="lang === 'en'">Release Notes | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/cloud/release/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/cloud/release/</a></span><span x-show="lang === 'zh'">Release Notes | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/cloud/release/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/cloud/release/</a></span></li>
+                <li><span x-show="lang === 'en'">Releases · juicedata/juicefs - GitHub, accessed on June 29, 2025, <a href="https://github.com/juicedata/juicefs/releases" class="text-blue-600 hover:underline" target="_blank">https://github.com/juicedata/juicefs/releases</a></span><span x-show="lang === 'zh'">Releases · juicedata/juicefs - GitHub, accessed on June 29, 2025, <a href="https://github.com/juicedata/juicefs/releases" class="text-blue-600 hover:underline" target="_blank">https://github.com/juicedata/juicefs/releases</a></span></li>
+                <li><span x-show="lang === 'en'">What's New in JuiceFS Enterprise Edition 5.0, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/release-notes/juicefs-enterprise-edition-v5" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/release-notes/juicefs-enterprise-edition-v5</a></span><span x-show="lang === 'zh'">What's New in JuiceFS Enterprise Edition 5.0, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/release-notes/juicefs-enterprise-edition-v5" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/release-notes/juicefs-enterprise-edition-v5</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS Cloud Service, accessed on June 29, 2025, <a href="https://juicefs.com/en/product/cloud-service" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/product/cloud-service</a></span><span x-show="lang === 'zh'">JuiceFS Cloud Service, accessed on June 29, 2025, <a href="https://juicefs.com/en/product/cloud-service" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/product/cloud-service</a></span></li>
+                <li><span x-show="lang === 'en'">Release Notes - JuiceFS Blog, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/release-notes" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/release-notes</a></span><span x-show="lang === 'zh'">Release Notes - JuiceFS Blog, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/release-notes" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/release-notes</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS Enterprise Edition 5.2: Supporting Hundreds of Billions of Files and Windows Clients, accessed on June 29, 2025, <a href="https://juicefs.medium.com/juicefs-enterprise-edition-5-2-supporting-hundreds-of-billions-of-files-and-windows-clients-4689054c72bb" class="text-blue-600 hover:underline" target="_blank">https://juicefs.medium.com/juicefs-enterprise-edition-5-2-supporting-hundreds-of-billions-of-files-and-windows-clients-4689054c72bb</a></span><span x-show="lang === 'zh'">JuiceFS Enterprise Edition 5.2: Supporting Hundreds of Billions of Files and Windows Clients, accessed on June 29, 2025, <a href="https://juicefs.medium.com/juicefs-enterprise-edition-5-2-supporting-hundreds-of-billions-of-files-and-windows-clients-4689054c72bb" class="text-blue-600 hover:underline" target="_blank">https://juicefs.medium.com/juicefs-enterprise-edition-5-2-supporting-hundreds-of-billions-of-files-and-windows-clients-4689054c72bb</a></span></li>
+                <li><span x-show="lang === 'en'">AI + Machine Learning File Storage Solution - JuiceFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/artificial-intelligence" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/artificial-intelligence</a></span><span x-show="lang === 'zh'">AI + Machine Learning File Storage Solution - JuiceFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/artificial-intelligence" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/artificial-intelligence</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS Enterprise 5.1: Write Support for Mirrors, Python SDK, and AI Enhancements, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/release-notes/uicefs-enterprise-5-1-artificial-intelligence" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/release-notes/uicefs-enterprise-5-1-artificial-intelligence</a></span><span x-show="lang === 'zh'">JuiceFS Enterprise 5.1: Write Support for Mirrors, Python SDK, and AI Enhancements, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/release-notes/uicefs-enterprise-5-1-artificial-intelligence" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/release-notes/uicefs-enterprise-5-1-artificial-intelligence</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS for Generative AI, accessed on June 29, 2025, <a href="https://juicefs.com/en/generative-ai" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/generative-ai</a></span><span x-show="lang === 'zh'">JuiceFS for Generative AI, accessed on June 29, 2025, <a href="https://juicefs.com/en/generative-ai" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/generative-ai</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS Blog, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog</a></span><span x-show="lang === 'zh'">JuiceFS Blog, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog</a></span></li>
+                <li><span x-show="lang === 'en'">BentoML Reduced LLM Loading Time from 20+ to a Few Minutes with JuiceFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/user-stories/accelerate-large-language-model-loading" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/user-stories/accelerate-large-language-model-loading</a></span><span x-show="lang === 'zh'">BentoML Reduced LLM Loading Time from 20+ to a Few Minutes with JuiceFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/user-stories/accelerate-large-language-model-loading" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/user-stories/accelerate-large-language-model-loading</a></span></li>
+                <li><span x-show="lang === 'en'">How JuiceFS Achieves Consistency and Low-Latency Data Distribution in Multi-Cloud Architectures, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/solutions/consistency-low-latency-data-distribution-multi-cloud-storage" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/solutions/consistency-low-latency-data-distribution-multi-cloud-storage</a></span><span x-show="lang === 'zh'">How JuiceFS Achieves Consistency and Low-Latency Data Distribution in Multi-Cloud Architectures, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/solutions/consistency-low-latency-data-distribution-multi-cloud-storage" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/solutions/consistency-low-latency-data-distribution-multi-cloud-storage</a></span></li>
+                <li><span x-show="lang === 'en'">Deep Dive into JuiceFS Data Synchronization and Consistency in Multi-Cloud Architectures, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/engineering/data-synchronization-consistency-multi-cloud-storage" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/engineering/data-synchronization-consistency-multi-cloud-storage</a></span><span x-show="lang === 'zh'">Deep Dive into JuiceFS Data Synchronization and Consistency in Multi-Cloud Architectures, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/engineering/data-synchronization-consistency-multi-cloud-storage" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/engineering/data-synchronization-consistency-multi-cloud-storage</a></span></li>
+                <li><span x-show="lang === 'en'">Big Data Storage - HDFS Alternative - JuiceFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/big-data" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/big-data</a></span><span x-show="lang === 'zh'">Big Data Storage - HDFS Alternative - JuiceFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/big-data" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/big-data</a></span></li>
+                <li><span x-show="lang === 'en'">JuiceFS Enterprise Edition 5.2: Supporting Hundreds of Billions of Files and Windows Clients - YouTube, accessed on June 29, 2025, <a href="https://www.youtube.com/watch?v=VsnJ52Ff7Mo" class="text-blue-600 hover:underline" target="_blank">https://www.youtube.com/watch?v=VsnJ52Ff7Mo</a></span><span x-show="lang === 'zh'">JuiceFS Enterprise Edition 5.2: Supporting Hundreds of Billions of Files and Windows Clients - YouTube, accessed on June 29, 2025, <a href="https://www.youtube.com/watch?v=VsnJ52Ff7Mo" class="text-blue-600 hover:underline" target="_blank">https://www.youtube.com/watch?v=VsnJ52Ff7Mo</a></span></li>
+                <li><span x-show="lang === 'en'">Upgrade | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/administration/upgrade/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/administration/upgrade/</a></span><span x-show="lang === 'zh'">Upgrade | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/administration/upgrade/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/administration/upgrade/</a></span></li>
+                <li><span x-show="lang === 'en'">Empowering NAS for AI Training with JuiceFS Direct-Mode NFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/usage-tips/direct-nfs" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/usage-tips/direct-nfs</a></span><span x-show="lang === 'zh'">Empowering NAS for AI Training with JuiceFS Direct-Mode NFS, accessed on June 29, 2025, <a href="https://juicefs.com/en/blog/usage-tips/direct-nfs" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/en/blog/usage-tips/direct-nfs</a></span></li>
+                <li><span x-show="lang === 'en'">Hammerspace Global Data Platform - dve advanced systems GmbH, accessed on June 29, 2025, <a href="https://dveas.de/wp-content/uploads/2024/06/02-White-Paper-Global-Data-Platform_v1b-compressed_1.pdf" class="text-blue-600 hover:underline" target="_blank">https://dveas.de/wp-content/uploads/2024/06/02-White-Paper-Global-Data-Platform_v1b-compressed_1.pdf</a></span><span x-show="lang === 'zh'">Hammerspace Global Data Platform - dve advanced systems GmbH, accessed on June 29, 2025, <a href="https://dveas.de/wp-content/uploads/2024/06/02-White-Paper-Global-Data-Platform_v1b-compressed_1.pdf" class="text-blue-600 hover:underline" target="_blank">https://dveas.de/wp-content/uploads/2024/06/02-White-Paper-Global-Data-Platform_v1b-compressed_1.pdf</a></span></li>
+                <li><span x-show="lang === 'en'">An Inside Look at Hammerspace's HPC-Grade Architecture - theCUBE Research, accessed on June 29, 2025, <a href="https://thecuberesearch.com/an-inside-look-at-hammerspaces-hpc-grade-architecture/" class="text-blue-600 hover:underline" target="_blank">https://thecuberesearch.com/an-inside-look-at-hammerspaces-hpc-grade-architecture/</a></span><span x-show="lang === 'zh'">An Inside Look at Hammerspace's HPC-Grade Architecture - theCUBE Research, accessed on June 29, 2025, <a href="https://thecuberesearch.com/an-inside-look-at-hammerspaces-hpc-grade-architecture/" class="text-blue-600 hover:underline" target="_blank">https://thecuberesearch.com/an-inside-look-at-hammerspaces-hpc-grade-architecture/</a></span></li>
+                <li><span x-show="lang === 'en'">Alluxio Architecture and Data Flow, accessed on June 29, 2025, <a href="https://www.alluxio.io/whitepapers/alluxio-architecture-and-data-flow" class="text-blue-600 hover:underline" target="_blank">https://www.alluxio.io/whitepapers/alluxio-architecture-and-data-flow</a></span><span x-show="lang === 'zh'">Alluxio Architecture and Data Flow, accessed on June 29, 2025, <a href="https://www.alluxio.io/whitepapers/alluxio-architecture-and-data-flow" class="text-blue-600 hover:underline" target="_blank">https://www.alluxio.io/whitepapers/alluxio-architecture-and-data-flow</a></span></li>
+                <li><span x-show="lang === 'en'">WEKA Architecture Key Concepts, accessed on June 29, 2025, <a href="https://www.weka.io/wp-content/uploads/files/resources/WEKA-Architecture-Key-Concepts.pdf" class="text-blue-600 hover:underline" target="_blank">https://www.weka.io/wp-content/uploads/files/resources/WEKA-Architecture-Key-Concepts.pdf</a></span><span x-show="lang === 'zh'">WEKA Architecture Key Concepts, accessed on June 29, 2025, <a href="https://www.weka.io/wp-content/uploads/files/resources/WEKA-Architecture-Key-Concepts.pdf" class="text-blue-600 hover:underline" target="_blank">https://www.weka.io/wp-content/uploads/files/resources/WEKA-Architecture-Key-Concepts.pdf</a></span></li>
+                <li><span x-show="lang === 'en'">The VAST Platform White Paper - VAST Data, accessed on June 29, 2025, <a href="https://www.vastdata.com/whitepaper" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/whitepaper</a></span><span x-show="lang === 'zh'">The VAST Platform White Paper - VAST Data, accessed on June 29, 2025, <a href="https://www.vastdata.com/whitepaper" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/whitepaper</a></span></li>
+                <li><span x-show="lang === 'en'">The Latest VAST Release is All About the Protocols | VAST Data, accessed on June 29, 2025, <a href="https://www.vastdata.com/blog/the-latest-vast-release-is-all-about-the-protocols" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/blog/the-latest-vast-release-is-all-about-the-protocols</a></span><span x-show="lang === 'zh'">The Latest VAST Release is All About the Protocols | VAST Data, accessed on June 29, 2025, <a href="https://www.vastdata.com/blog/the-latest-vast-release-is-all-about-the-protocols" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/blog/the-latest-vast-release-is-all-about-the-protocols</a></span></li>
+                <li><span x-show="lang === 'en'">Parallel NFS - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/parallel-nfs/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/parallel-nfs/</a></span><span x-show="lang === 'zh'">Parallel NFS - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/parallel-nfs/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/parallel-nfs/</a></span></li>
+                <li><span x-show="lang === 'en'">How to Set Up Object Storage | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/reference/how_to_set_up_object_storage/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/reference/how_to_set_up_object_storage/</a></span><span x-show="lang === 'zh'">How to Set Up Object Storage | JuiceFS Document Center, accessed on June 29, 2025, <a href="https://juicefs.com/docs/community/reference/how_to_set_up_object_storage/" class="text-blue-600 hover:underline" target="_blank">https://juicefs.com/docs/community/reference/how_to_set_up_object_storage/</a></span></li>
+                <li><span x-show="lang === 'en'">Category: White Paper - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/category/white-paper/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/category/white-paper/</a></span><span x-show="lang === 'zh'">Category: White Paper - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/category/white-paper/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/category/white-paper/</a></span></li>
+                <li><span x-show="lang === 'en'">Hammerspace harness parallel NFS architecture to unlock data - SiliconANGLE, accessed on June 29, 2025, <a href="https://siliconangle.com/2025/03/14/hammerspace-parallel-nfs-architecture-data-cubedawards25/" class="text-blue-600 hover:underline" target="_blank">https://siliconangle.com/2025/03/14/hammerspace-parallel-nfs-architecture-data-cubedawards25/</a></span><span x-show="lang === 'zh'">Hammerspace harness parallel NFS architecture to unlock data - SiliconANGLE, accessed on June 29, 2025, <a href="https://siliconangle.com/2025/03/14/hammerspace-parallel-nfs-architecture-data-cubedawards25/" class="text-blue-600 hover:underline" target="_blank">https://siliconangle.com/2025/03/14/hammerspace-parallel-nfs-architecture-data-cubedawards25/</a></span></li>
+                <li><span x-show="lang === 'en'">Alluxio: Overview, accessed on June 29, 2025, <a href="https://documentation.alluxio.io/" class="text-blue-600 hover:underline" target="_blank">https://documentation.alluxio.io/</a></span><span x-show="lang === 'zh'">Alluxio: Overview, accessed on June 29, 2025, <a href="https://documentation.alluxio.io/" class="text-blue-600 hover:underline" target="_blank">https://documentation.alluxio.io/</a></span></li>
+                <li><span x-show="lang === 'en'">Release Notes | Alluxio, accessed on June 29, 2025, <a href="https://documentation.alluxio.io/ee-ai-en/release-notes" class="text-blue-600 hover:underline" target="_blank">https://documentation.alluxio.io/ee-ai-en/release-notes</a></span><span x-show="lang === 'zh'">Release Notes | Alluxio, accessed on June 29, 2025, <a href="https://documentation.alluxio.io/ee-ai-en/release-notes" class="text-blue-600 hover:underline" target="_blank">https://documentation.alluxio.io/ee-ai-en/release-notes</a></span></li>
+                <li><span x-show="lang === 'en'">VAST Data Unveils the Operating System for the Thinking Machine, accessed on June 29, 2025, <a href="https://www.vastdata.com/press-releases/vast-data-unveils-ai-os-for-thinking-machines" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/press-releases/vast-data-unveils-ai-os-for-thinking-machines</a></span><span x-show="lang === 'zh'">VAST Data Unveils the Operating System for the Thinking Machine, accessed on June 29, 2025, <a href="https://www.vastdata.com/press-releases/vast-data-unveils-ai-os-for-thinking-machines" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/press-releases/vast-data-unveils-ai-os-for-thinking-machines</a></span></li>
+                <li><span x-show="lang === 'en'">Tier 0 - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/tier-0/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/tier-0/</a></span><span x-show="lang === 'zh'">Tier 0 - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/tier-0/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/tier-0/</a></span></li>
+                <li><span x-show="lang === 'en'">Why Tier 0 Is a Game-Changer for GPU Storage - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/why-tier-0-is-a-game-changer-for-gpu-storage/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/why-tier-0-is-a-game-changer-for-gpu-storage/</a></span><span x-show="lang === 'zh'">Why Tier 0 Is a Game-Changer for GPU Storage - Hammerspace, accessed on June 29, 2025, <a href="https://hammerspace.com/why-tier-0-is-a-game-changer-for-gpu-storage/" class="text-blue-600 hover:underline" target="_blank">https://hammerspace.com/why-tier-0-is-a-game-changer-for-gpu-storage/</a></span></li>
+                <li><span x-show="lang === 'en'">VAST Data Unveils the Operating System for the Thinking Machine - GlobeNewswire, accessed on June 29, 2025, <a href="https://www.globenewswire.com/news-release/2025/05/21/3085795/0/en/VAST-Data-Unveils-the-Operating-System-for-the-Thinking-Machine.html" class="text-blue-600 hover:underline" target="_blank">https://www.globenewswire.com/news-release/2025/05/21/3085795/0/en/VAST-Data-Unveils-the-Operating-System-for-the-Thinking-Machine.html</a></span><span x-show="lang === 'zh'">VAST Data Unveils the Operating System for the Thinking Machine - GlobeNewswire, accessed on June 29, 2025, <a href="https://www.globenewswire.com/news-release/2025/05/21/3085795/0/en/VAST-Data-Unveils-the-Operating-System-for-the-Thinking-Machine.html" class="text-blue-600 hover:underline" target="_blank">https://www.globenewswire.com/news-release/2025/05/21/3085795/0/en/VAST-Data-Unveils-the-Operating-System-for-the-Thinking-Machine.html</a></span></li>
+                <li><span x-show="lang === 'en'">VAST Data, accessed on June 29, 2025, <a href="https://www.vastdata.com/" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/</a></span><span x-show="lang === 'zh'">VAST Data, accessed on June 29, 2025, <a href="https://www.vastdata.com/" class="text-blue-600 hover:underline" target="_blank">https://www.vastdata.com/</a></span></li>
+            </ol>
+        </section>
+
+        <!-- Extended Thinking Section -->
+        <section id="extended-thinking" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Extended Thinking</span>
+                <span x-show="lang === 'zh'">延伸思考</span>
+            </h2>
+            <div class="info-callout">
+                <ul class="list-decimal list-inside text-gray-700 space-y-2">
+                    <li><span x-show="lang === 'en'">JuiceFS's decoupled architecture brings flexibility, but also means users need to manage metadata and object storage backends themselves. In practical applications, how to balance this flexibility with operational complexity?</span><span x-show="lang === 'zh'">JuiceFS 的解耦架构带来了灵活性，但也意味着用户需要自行管理元数据和对象存储后端。在实际应用中，如何平衡这种灵活性与运维复杂性？</span></li>
+                    <li><span x-show="lang === 'en'">The article compares JuiceFS with integrated hardware/software solutions (e.g., Weka, VAST Data). In which specific scenarios does the "bring your own storage" JuiceFS model have a greater strategic advantage compared to integrated solutions?</span><span x-show="lang === 'zh'">文章对比了 JuiceFS 与软硬一体化方案（如 Weka, VAST Data）。在哪些特定场景下，“自带存储”的 JuiceFS 模式相比集成方案更具战略优势？</span></li>
+                    <li><span x-show="lang === 'en'">Considering the rapid development of AI/ML workloads, what other innovative features can JuiceFS explore in "AI-native data services" in the future, besides data versioning and cataloging?</span><span x-show="lang === 'zh'">考虑到 AI/ML 工作负载的快速发展，JuiceFS 未来在“AI原生数据服务”方面，除了数据版本控制和编目，还可以探索哪些更具创新性的功能？</span></li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="text-center mt-12 text-gray-500">
+            <span x-show="lang === 'en'">--- [End of Document] ---</span>
+            <span x-show="lang === 'zh'">---【本文完】---</span>
+        </div>
+
+        <!-- Author Profile (mpcard) - Rendered as a static card -->
+        <div class="section-container mt-12">
+            <div class="flex items-center justify-center p-6 bg-white rounded-lg shadow-md">
+                <img src="../../08-Assets/pics/20250629-1914-Fig-1.png" alt="Author Headshot" class="w-24 h-24 rounded-full mr-6 border-2 border-[#3f624b]">
+                <div>
+                    <h4 class="text-xl font-bold text-[#3f624b] mb-2">
+                        <span x-show="lang === 'en'">Wang Zhiyu</span>
+                        <span x-show="lang === 'zh'">王知鱼</span>
+                    </h4>
+                    <p class="text-gray-700 text-sm mb-1">
+                        <span x-show="lang === 'en'">Alias: trylab_notion_site</span>
+                        <span x-show="lang === 'zh'">别名: trylab_notion_site</span>
+                    </p>
+                    <p class="text-gray-600 text-sm">
+                        <span x-show="lang === 'en'">Signature: Cloud computing, data storage cutting-edge technology, reading and writing, practicing long-termism.</span>
+                        <span x-show="lang === 'zh'">签名: 云计算、数据存储前沿技术，读书与写作，践行长期主义。</span>
+                    </p>
+                </div>
+            </div>
+            <div class="text-center mt-6">
+                <a href="https://wangzhiyu.notion.site" target="_blank" class="text-blue-600 hover:underline font-semibold">
+                    <span x-show="lang === 'en'">Read Original Articles (Updated to 6.30)</span>
+                    <span x-show="lang === 'zh'">阅读原文（更新到 6.30）</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
