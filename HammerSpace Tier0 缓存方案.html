@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ lang: 'en' }" :lang="lang">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.5, minimum-scale=0.5, user-scalable=no">
+    <title>Data Unchained: Hammerspace Tier Zero Capability</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/js/all.min.js" defer></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-wrap: break-word; }
+        .highlight-num { background-color: #FFF3E0; color: #E65100; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+        .text-readable { max-width: 150ch; }
+        .sidebar-gradient { background: linear-gradient(135deg, #3f624b 0%, #274d3b 100%); }
+        .flow-box { background: #F5F5F5; border: 2px solid #3f624b; border-radius: 8px; padding: 16px; margin: 8px; }
+        .chart-container { position: relative; height: 300px; margin: 20px 0; }
+        .smart-art-icon { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: #FFF3E0; border-radius: 50%; margin: 0 10px; }
+        .transition-all { transition: all 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.05); }
+        .section-container { margin-bottom: 40px; padding: 20px; background: #FAFAFA; border-radius: 12px; min-height: auto; }
+        .pyramid-level { background: linear-gradient(135deg, #3f624b, #274d3b); color: white; text-align: center; padding: 12px; margin: 4px auto; border-radius: 6px; }
+        .matrix-cell { background: #FFF3E0; border: 2px solid #3f624b; padding: 16px; text-align: center; border-radius: 8px; }
+        .hierarchy-box { background: #F5F5F5; border: 2px solid #1e40af; border-radius: 8px; padding: 12px; margin: 8px; text-align: center; }
+        .text-chart-combo { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; margin: 20px 0; }
+        .chart-annotation { position: absolute; background: rgba(63, 98, 75, 0.9); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .process-arrow { color: #3f624b; font-size: 2rem; margin: 0 1rem; }
+        .info-callout { background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        .warning-callout { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        .success-callout { background: #ECFDF5; border-left: 4px solid #10B981; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        
+        .cycle-container { 
+            position: relative; 
+            width: 400px; 
+            height: 400px; 
+            margin: 0 auto;
+        }
+        .cycle-step { 
+            position: absolute; 
+            background: white; 
+            border: 3px solid #3f624b; 
+            border-radius: 50%; 
+            width: 100px; 
+            height: 100px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 12px;
+            text-align: center;
+        }
+        .cycle-step-1 { top: 0; left: 50%; transform: translateX(-50%); }
+        .cycle-step-2 { top: 50%; right: 0; transform: translateY(-50%); }
+        .cycle-step-3 { bottom: 0; left: 50%; transform: translateX(-50%); }
+        .cycle-step-4 { top: 50%; left: 0; transform: translateY(-50%); }
+        .cycle-center { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 120px; 
+            height: 120px; 
+            background: #FFF3E0; 
+            border: 4px solid #3f624b; 
+            border-radius: 50%; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+        }
+        
+        .static-card { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); 
+            border: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 sidebar-gradient text-white p-6 overflow-y-auto z-50">
+        <h2 class="text-2xl font-bold mb-4">
+            <span x-show="lang === 'en'">Navigation</span>
+            <span x-show="lang === 'zh'">导航目录</span>
+        </h2>
+        
+        <!-- Language Toggle -->
+        <button @click="lang = lang === 'en' ? 'zh' : 'en'" 
+                class="w-full mb-6 bg-white/20 hover:bg-white/30 p-3 rounded-lg transition-all text-left">
+            <i class="fas fa-language mr-2"></i>
+            <span x-show="lang === 'en'">Switch to 中文</span>
+            <span x-show="lang === 'zh'">Switch to English</span>
+        </button>
+
+        <!-- Navigation Menu -->
+        <nav class="space-y-2">
+            <a href="#introduction" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span x-show="lang === 'en'">Introduction</span>
+                <span x-show="lang === 'zh'">介绍</span>
+            </a>
+            <a href="#problem-statement" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span x-show="lang === 'en'">Problem Statement</span>
+                <span x-show="lang === 'zh'">问题陈述</span>
+            </a>
+            <a href="#tier-zero-solution" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-server mr-2"></i>
+                <span x-show="lang === 'en'">Tier Zero Solution</span>
+                <span x-show="lang === 'zh'">Tier Zero 解决方案</span>
+            </a>
+            <a href="#technology-overview" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-cogs mr-2"></i>
+                <span x-show="lang === 'en'">Technology Overview</span>
+                <span x-show="lang === 'zh'">技术概览</span>
+            </a>
+            <a href="#customer-story" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-user-friends mr-2"></i>
+                <span x-show="lang === 'en'">Customer Story</span>
+                <span x-show="lang === 'zh'">客户案例</span>
+            </a>
+            <a href="#deployment-scenario" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-play-circle mr-2"></i>
+                <span x-show="lang === 'en'">Deployment Scenario</span>
+                <span x-show="lang === 'zh'">部署场景</span>
+            </a>
+            <a href="#key-benefits" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-star mr-2"></i>
+                <span x-show="lang === 'en'">Key Benefits</span>
+                <span x-show="lang === 'zh'">关键优势</span>
+            </a>
+            <a href="#hdi-vs-tier-zero" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-exchange-alt mr-2"></i>
+                <span x-show="lang === 'en'">HDI vs. Tier Zero</span>
+                <span x-show="lang === 'zh'">HDI vs. Tier Zero</span>
+            </a>
+            <a href="#supercomputing-event" class="block p-3 hover:bg-white/20 rounded-lg transition-all">
+                <i class="fas fa-calendar-alt mr-2"></i>
+                <span x-show="lang === 'en'">Supercomputing Event</span>
+                <span x-show="lang === 'zh'">超级计算大会</span>
+            </a>
+        </nav>
+        
+        <div class="mt-12 pt-6 border-t border-white/30 text-sm text-center">
+            <p class="opacity-90">Generated by</p>
+            <p class="font-semibold">Obsidian Copilot</p>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <!-- Introduction Section -->
+        <section id="introduction" class="section-container">
+            <div class="text-chart-combo">
+                <div>
+                    <h1 class="text-5xl font-extrabold text-gray-900 tracking-tight mb-6">
+                        <span x-show="lang === 'en'">Data Unchained: Hammerspace Tier Zero Capability</span>
+                        <span x-show="lang === 'zh'">数据解链：Hammerspace Tier Zero 能力</span>
+                    </h1>
+                    <p class="text-lg text-gray-700 mb-4 leading-relaxed">
+                        <span x-show="lang === 'en'">This episode of Data Unchained features David Flynn, CEO and founder of Hammerspace, discussing the company's new Tier Zero capability within their Global Data Platform. This innovation addresses the challenge of underutilized local storage in compute nodes, particularly for AI and HPC workloads.</span>
+                        <span x-show="lang === 'zh'">本期《数据解链》节目邀请了Hammerspace的CEO兼创始人David Flynn，共同探讨该公司在其全球数据平台中推出的全新Tier Zero能力。这项创新解决了计算节点中本地存储利用率不足的挑战，尤其针对AI和HPC工作负载。</span>
+                    </p>
+                    <div class="info-callout">
+                        <h4 class="font-semibold text-blue-800 mb-2"><i class="fas fa-info-circle mr-2"></i>
+                            <span x-show="lang === 'en'">Podcast Focus</span>
+                            <span x-show="lang === 'zh'">播客焦点</span>
+                        </h4>
+                        <p class="text-blue-700">
+                            <span x-show="lang === 'en'">The podcast explores how data has become a decentralized resource and the challenges and solutions in harnessing its value, with a focus on performance and efficient data management.</span>
+                            <span x-show="lang === 'zh'">播客深入探讨了数据如何成为一种去中心化资源，以及如何利用其价值所面临的挑战与解决方案，重点关注性能和高效的数据管理。</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">
+                        <span x-show="lang === 'en'">Key Discussion Points</span>
+                        <span x-show="lang === 'zh'">讨论要点</span>
+                    </h3>
+                    <ul class="text-sm text-gray-700 space-y-2">
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">The problem of "trapped capacity" in compute nodes.</span><span x-show="lang === 'zh'">计算节点中“被困容量”的问题。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Hammerspace's hyperscale NAS architecture.</span><span x-show="lang === 'zh'">Hammerspace的超大规模NAS架构。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Leveraging local NVMe for shared storage.</span><span x-show="lang === 'zh'">利用本地NVMe实现共享存储。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Tier Zero as a "co-local" data tier.</span><span x-show="lang === 'zh'">Tier Zero作为“共址”数据层。</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problem Statement Section -->
+        <section id="problem-statement" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">The Challenge: Trapped Capacity in Compute Nodes</span>
+                <span x-show="lang === 'zh'">挑战：计算节点中的被困容量</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Underutilized Local Storage</span>
+                        <span x-show="lang === 'zh'">未充分利用的本地存储</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">Modern compute servers, especially those for AI and HPC like DGX nodes, are equipped with large amounts of local NVMe storage (e.g., 30-60TB or more per node). However, this Direct Attached Storage (DAS) often becomes "islands of data," making it difficult to manage and share effectively at scale.</span>
+                        <span x-show="lang === 'zh'">现代计算服务器，特别是用于AI和HPC的DGX节点，都配备了大量的本地NVMe存储（例如，每个节点30-60TB甚至更多）。然而，这种直连存储（DAS）常常成为“数据孤岛”，在规模化应用中难以有效管理和共享。</span>
+                    </p>
+                    <div class="warning-callout">
+                        <p><i class="fas fa-exclamation-triangle mr-2"></i><span x-show="lang === 'en'">This "trapped capacity" significantly underutilizes the investment in high-performance flash media.</span><span x-show="lang === 'zh'">这种“被困容量”严重低估了对高性能闪存介质的投资价值。</span></p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">The Scale of the Problem</span>
+                        <span x-show="lang === 'zh'">问题的规模</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">When dealing with tens, hundreds, or even thousands of these nodes, the aggregate unused capacity can reach tens or hundreds of petabytes, even exabytes. Managing these distributed local storage resources becomes practically impossible without a unified approach.</span>
+                        <span x-show="lang === 'zh'">当处理数十、数百甚至数千个此类节点时，聚合的未用容量可达数十 PB、数百 PB 甚至 EB 级别。若无统一方法，管理这些分布式本地存储资源将变得极其困难。</span>
+                    </p>
+                    <div class="info-callout">
+                        <p><i class="fas fa-info-circle mr-2"></i><span x-show="lang === 'en'">The core issue is the lack of global manageability and accessibility for local data.</span><span x-show="lang === 'zh'">核心问题在于本地数据缺乏全局可管理性和可访问性。</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tier Zero Solution Section -->
+        <section id="tier-zero-solution" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Hammerspace Tier Zero: Unlocking Local NVMe</span>
+                <span x-show="lang === 'zh'">Hammerspace Tier Zero：释放本地NVMe潜力</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">The Concept of Tier Zero</span>
+                        <span x-show="lang === 'zh'">Tier Zero 的概念</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">Hammerspace Tier Zero leverages the existing hyperscale NAS capability and Linux's native NFS export functionality. It allows local NVMe storage within compute nodes to be aggregated into a single, massive shared storage system. This effectively makes the compute nodes themselves a "Tier Zero" storage tier, positioned in front of traditional Tier One (dedicated shared storage) and Tier Two (capacity/object storage).</span>
+                        <span x-show="lang === 'zh'">Hammerspace Tier Zero 利用现有的超大规模NAS能力和Linux原生的NFS导出功能。它允许计算节点内的本地NVMe存储被聚合为一个单一、庞大的共享存储系统。这有效地将计算节点本身变成了“Tier Zero”存储层，位于传统Tier One（专用共享存储）和Tier Two（容量/对象存储）之前。</span>
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Key Functionality</span>
+                        <span x-show="lang === 'zh'">关键功能</span>
+                    </h3>
+                    <ul class="text-gray-700 mb-4 space-y-2">
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'"><strong>Global Namespace:</strong> Aggregates thousands of small NFS file stores into one massive file system.</span><span x-show="lang === 'zh'"><strong>全局命名空间：</strong>将数千个小型NFS文件存储聚合为一个庞大的文件系统。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'"><strong>Full Aggregate Performance:</strong> Offers the combined performance of all storage nodes without choke points.</span><span x-show="lang === 'zh'"><strong>完整聚合性能：</strong>提供所有存储节点的组合性能，无瓶颈。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'"><strong>Co-location:</strong> Data can be co-located with compute functions, potentially on the same node.</span><span x-show="lang === 'zh'"><strong>共址：</strong>数据可以与计算功能共址，可能在同一节点上。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'"><strong>Data Orchestration:</strong> Manages data distribution, rebalancing, and blending with other storage tiers.</span><span x-show="lang === 'zh'"><strong>数据编排：</strong>管理数据分发、再平衡以及与其他存储层的融合。</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technology Overview Section -->
+        <section id="technology-overview" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Underlying Technology and Advantages</span>
+                <span x-show="lang === 'zh'">底层技术与优势</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Leveraging Linux Native Capabilities</span>
+                        <span x-show="lang === 'zh'">利用Linux原生能力</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">The solution relies on the built-in NFS server and client capabilities within Linux, including the "local IO" patch set. This allows for zero-copy data transfers when the client and server are on the same host, achieving true local NVMe performance for shared files.</span>
+                        <span x-show="lang === 'zh'">该解决方案依赖于Linux内置的NFS服务器和客户端能力，包括“本地IO”补丁集。这使得当客户端和服务器在同一主机上时，可以实现零拷贝数据传输，从而为共享文件带来真正的本地NVMe性能。</span>
+                    </p>
+                    <div class="success-callout">
+                        <p><i class="fas fa-trophy mr-2"></i><span x-show="lang === 'en'"><strong>Zero Additional Footprint:</strong> No extra networking, rack space, or power required. Flash capacity is often a sunk cost.</span><span x-show="lang === 'zh'"><strong>零额外占地：</strong>无需额外的网络、机架空间或电力。闪存容量通常是已发生的成本。</span></p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Performance and Efficiency</span>
+                        <span x-show="lang === 'zh'">性能与效率</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">The kernel-based NFS stack is highly efficient, consuming minimal CPU (<span class="highlight-num">under 10%</span>). It supports RDMA for even greater efficiency and throughput. Data retransmissions are minimized, reducing latency and improving overall bandwidth and IOPS.</span>
+                        <span x-show="lang === 'zh'">基于内核的NFS堆栈效率极高，CPU占用率极低（<span class="highlight-num">低于10%</span>）。它支持RDMA以获得更高的效率和吞吐量。数据重传被最小化，从而降低延迟并提高整体带宽和IOPS。</span>
+                    </p>
+                    <div class="info-callout">
+                        <p><i class="fas fa-info-circle mr-2"></i><span x-show="lang === 'en'"><strong>PCIe Bandwidth:</strong> Leverages the massive bandwidth of PCIe Gen 5 (32 lanes), offering hundreds of GB/s and tens of millions of IOPS, far exceeding network capabilities.</span><span x-show="lang === 'zh'"><strong>PCIe带宽：</strong>利用PCIe Gen 5（32通道）的巨大带宽，提供数百GB/s和数千万IOPS的性能，远超网络能力。</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Customer Story Section -->
+        <section id="customer-story" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Real-World Impact: A Customer's Experience</span>
+                <span x-show="lang === 'zh'">实际影响：客户体验</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">The Need for Speed</span>
+                        <span x-show="lang === 'zh'">对速度的需求</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">A customer had invested heavily in GPUs but realized they lacked a way to feed them with data efficiently. They faced pressure to get infrastructure up and running quickly without incurring additional costs for shared storage or power.</span>
+                        <span x-show="lang === 'zh'">一位客户在GPU上投入巨资，但意识到缺乏有效的数据供给方式。他们面临着快速部署基础设施的压力，同时又要避免为共享存储或电力增加额外成本。</span>
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">The Hammerspace Solution</span>
+                        <span x-show="lang === 'zh'">Hammerspace解决方案</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">By simply enabling the NFS server on their DGX nodes and registering the space with Hammerspace, they achieved immediate value. Hammerspace orchestrated the data, providing a shared platform with minimal effort.</span>
+                        <span x-show="lang === 'zh'">通过简单地在其DGX节点上启用NFS服务器并将空间注册到Hammerspace，他们立即获得了价值。Hammerspace编排了数据，以最小的努力提供了一个共享平台。</span>
+                    </p>
+                    <div class="success-callout">
+                        <p><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'"><strong>Key Benefits Realized:</strong> Fast time-to-value, cost avoidance (no new storage hardware), power avoidance, and significantly improved GPU utilization due to data locality.</span><span x-show="lang === 'zh'"><strong>实现的关健优势：</strong>快速实现价值，避免成本（无需新的存储硬件），避免电力消耗，以及由于数据局部性而显著提高的GPU利用率。</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deployment Scenario Section -->
+        <section id="deployment-scenario" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Seamless Deployment</span>
+                <span x-show="lang === 'zh'">无缝部署</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Simplicity and Speed</span>
+                        <span x-show="lang === 'zh'">简便与速度</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">Deployment involves spinning up the Hammerspace metadata service (on VM, cloud instance, or container) and then simply telling it about the existing NFS exports from the compute nodes. No custom software needs to be installed on the compute nodes themselves.</span>
+                        <span x-show="lang === 'zh'">部署过程包括启动Hammerspace元数据服务（可在VM、云实例或容器上运行），然后告知其计算节点现有的NFS导出信息。计算节点本身无需安装任何自定义软件。</span>
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Time to Value</span>
+                        <span x-show="lang === 'zh'">价值实现时间</span>
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        <span x-show="lang === 'en'">Customers can bring hundreds of servers online in minutes or hours. The "burn-in" process is already done since the compute nodes are already operational. This rapid deployment minimizes the time between acquiring hardware and achieving productive use.</span>
+                        <span x-show="lang === 'zh'">客户可以在几分钟或几小时内上线数百台服务器。由于计算节点已在运行，因此“磨合”过程已完成。这种快速部署最大限度地缩短了从采购硬件到实现生产性使用的间隔时间。</span>
+                    </p>
+                    <div class="warning-callout">
+                        <p><i class="fas fa-clock text-orange-600 mr-2"></i><span x-show="lang === 'en'">Minutes to hours for hundreds of servers.</span><span x-show="lang === 'zh'">数百台服务器可在几分钟到几小时内上线。</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Benefits Section -->
+        <section id="key-benefits" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Core Advantages of Hammerspace Tier Zero</span>
+                <span x-show="lang === 'zh'">Hammerspace Tier Zero 的核心优势</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="static-card text-center">
+                    <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-dollar-sign text-orange-600 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2"><span x-show="lang === 'en'">Cost Efficiency</span><span x-show="lang === 'zh'">成本效益</span></h4>
+                    <p class="text-sm text-gray-600 mb-3"><span x-show="lang === 'en'">Utilizes existing hardware, avoiding new storage purchases.</span><span x-show="lang === 'zh'">利用现有硬件，避免购买新的存储设备。</span></p>
+                </div>
+
+                <div class="static-card text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-rocket text-blue-600 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2"><span x-show="lang === 'en'">Performance Boost</span><span x-show="lang === 'zh'">性能提升</span></h4>
+                    <p class="text-sm text-gray-600 mb-3"><span x-show="lang === 'en'">Achieves local NVMe speeds for shared data.</span><span x-show="lang === 'zh'">为共享数据实现本地NVMe速度。</span></p>
+                </div>
+
+                <div class="static-card text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2"><span x-show="lang === 'en'">GPU Utilization</span><span x-show="lang === 'zh'">GPU利用率</span></h4>
+                    <p class="text-sm text-gray-600 mb-3"><span x-show="lang === 'en'">Keeps GPUs busy by providing data locally.</span><span x-show="lang === 'zh'">通过本地提供数据，保持GPU的忙碌状态。</span></p>
+                </div>
+
+                <div class="static-card text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-sync-alt text-purple-600 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2"><span x-show="lang === 'en'">Simplicity</span><span x-show="lang === 'zh'">简便性</span></h4>
+                    <p class="text-sm text-gray-600 mb-3"><span x-show="lang === 'en'">Leverages native Linux NFS, no client software needed.</span><span x-show="lang === 'zh'">利用Linux原生NFS，无需客户端软件。</span></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- HDI vs. Tier Zero Section -->
+        <section id="hdi-vs-tier-zero" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Hammerspace Tier Zero vs. HCI Storage</span>
+                <span x-show="lang === 'zh'">Hammerspace Tier Zero vs. HCI存储</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">HCI Storage Concerns</span>
+                        <span x-show="lang === 'zh'">HCI存储的顾虑</span>
+                    </h3>
+                    <ul class="text-gray-700 mb-4 space-y-2">
+                        <li><i class="fas fa-times text-red-600 mr-2"></i><span x-show="lang === 'en'">Complexity: Requires dropping in drivers, potential compatibility issues.</span><span x-show="lang === 'zh'">复杂性：需要安装驱动程序，可能存在兼容性问题。</span></li>
+                        <li><i class="fas fa-times text-red-600 mr-2"></i><span x-show="lang === 'en'">Noisy Neighbor: Serving peers can distract the CPU.</span><span x-show="lang === 'zh'">吵闹邻居：服务对等节点会分散CPU注意力。</span></li>
+                        <li><i class="fas fa-times text-red-600 mr-2"></i><span x-show="lang === 'en'">Coupled Scaling: Capacity scaling requires scaling compute.</span><span x-show="lang === 'zh'">耦合扩展：容量扩展需要扩展计算。</span></li>
+                        <li><i class="fas fa-times text-red-600 mr-2"></i><span x-show="lang === 'en'">Reliability Concerns: Compute nodes may have higher failure rates.</span><span x-show="lang === 'zh'">可靠性顾虑：计算节点可能具有更高的故障率。</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                        <span x-show="lang === 'en'">Tier Zero Advantages</span>
+                        <span x-show="lang === 'zh'">Tier Zero 的优势</span>
+                    </h3>
+                    <ul class="text-gray-700 mb-4 space-y-2">
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Native Linux: Built into the kernel, no extra software.</span><span x-show="lang === 'zh'">Linux原生：内置于内核，无需额外软件。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Efficient CPU Usage: Kernel-based, minimal CPU overhead (<span class="highlight-num">under 10%</span>).</span><span x-show="lang === 'zh'">高效CPU使用：基于内核，CPU开销极小（<span class="highlight-num">低于10%</span>）。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Decoupled Scaling: Part of an orchestrated environment, scales independently.</span><span x-show="lang === 'zh'">解耦扩展：作为编排环境的一部分，可独立扩展。</span></li>
+                        <li><i class="fas fa-check text-green-600 mr-2"></i><span x-show="lang === 'en'">Robust Reliability: Achieved through data orchestration, redundancy, and rapid rebuilds.</span><span x-show="lang === 'zh'">强大的可靠性：通过数据编排、冗余和快速重建实现。</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Supercomputing Event Section -->
+        <section id="supercomputing-event" class="section-container">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                <span x-show="lang === 'en'">Visit Hammerspace at Supercomputing</span>
+                <span x-show="lang === 'zh'">莅临Hammerspace超级计算大会展位</span>
+            </h2>
+            
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 p-8 rounded-lg text-center">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <span x-show="lang === 'en'">See Hammerspace Tier Zero in Action</span>
+                    <span x-show="lang === 'zh'">亲身体验Hammerspace Tier Zero</span>
+                </h3>
+                <p class="text-gray-700 mb-6">
+                    <span x-show="lang === 'en'">Hammerspace will be at Supercomputing, showcasing their latest innovations. If you've recently purchased DGX nodes or other compute nodes with local NVMe, this is a must-see to understand how to unlock their full potential.</span>
+                    <span x-show="lang === 'zh'">Hammerspace将在超级计算大会上展示其最新创新。如果您最近购买了DGX节点或其他带有本地NVMe的计算节点，务必前来了解如何释放其全部潜力。</span>
+                </p>
+                <div class="flex justify-center">
+                    <a href="https://www.sc23.org/" target="_blank" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center">
+                        <i class="fas fa-calendar-alt mr-3"></i>
+                        <span x-show="lang === 'en'">Learn More About Supercomputing</span>
+                        <span x-show="lang === 'zh'">了解更多关于超级计算大会的信息</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <script>
+        const chartColors = {
+            orange: '#3f624b', // Theme color
+            blue: '#1e40af',
+            gray: '#64748b',
+            green: '#0f766e',
+            purple: '#5b21b6',
+            red: '#dc2626',
+            lightBlue: '#334155',
+            lightGreen: '#58D68D',
+            darkGrayBlue: '#374151'
+        };
+        
+        // Charts are rendered in English as per the example template.
+        // No specific charts were requested for this content, so this section is kept minimal.
+        // If specific data visualization were provided, charts would be added here.
+        
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
